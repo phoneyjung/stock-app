@@ -1,5 +1,5 @@
-const CACHE = 'plp-stock-v1';
-const CORE = ['./', './index.html', './manifest.json', './icon-192.png'];
+const CACHE = 'plp-stock-v2';
+const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './bg-pattern.png', './hdr-banner.jpg', './empty-box.jpg'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
 });
