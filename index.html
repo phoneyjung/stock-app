@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#113D6C">
+<title>PLP Stock — เช็คสต๊อก</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+<style>
+:root{
+  --cream:#FBF6EC; --card:#FFFFFF; --navy:#113D6C; --gold:#C68B4A;
+  --ink:#1F2A37; --muted:#8A94A0; --line:#EBE3D4; --tint:#F3EEE2;
+  --red:#BA3D4D; --green:#2E7D5B; --sky:#5BB8E8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Kanit',system-ui,sans-serif; background:var(--cream); color:var(--ink);
+  font-weight:400; font-size:15px; padding-bottom:env(safe-area-inset-bottom);
+}
+#root{max-width:560px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 2px 10px rgba(17,61,108,.05)}
+.press{cursor:pointer;transition:transform .08s ease,box-shadow .12s ease}
+.press:active{transform:scale(.975)}
+button{font-family:inherit;font-size:inherit;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:16px;color:var(--ink);
+  border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:-1px}
+.btn{background:var(--navy);color:#fff;border-radius:14px;padding:12px 16px;font-weight:500;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.gold{background:var(--gold)}
+.btn.ghost{background:var(--tint);color:var(--navy)}
+.btn.danger{background:var(--red)}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;
+  font-size:13px;white-space:nowrap}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row{display:flex;align-items:center;gap:10px}
+.scroll-x{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 6px;scrollbar-width:none}
+.scroll-x::-webkit-scrollbar{display:none}
+.lbl{font-size:12px;color:var(--muted);font-weight:400;margin-bottom:4px;display:block}
+.hdr{background:linear-gradient(160deg,var(--navy),#0C2C4E);color:#fff;
+  border-radius:0 0 26px 26px;padding:14px 16px 20px}
+.tag{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:500}
+.sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:absolute;inset:0;background:rgba(15,30,50,.45)}
+.sheet-in{position:relative;background:var(--cream);width:100%;max-width:560px;
+  border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow:auto;animation:up .18s ease}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(255,255,255,.96);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom));display:flex}
+.nav>button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px 0;font-size:10.5px;color:var(--muted)}
+.nav>button.on{color:var(--navy);font-weight:500}
+.nav .ic{font-size:20px;line-height:1}
+.thumb{width:46px;height:46px;border-radius:12px;object-fit:cover;background:var(--tint);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.big{font-size:26px;font-weight:600;line-height:1.1}
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv:last-child{border-bottom:none}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+/* ============================================================
+   PLP STOCK  ·  แอปเช็คสต๊อกหลายร้าน
+   แก้ค่า FIREBASE_CONFIG ข้างล่างให้ตรงกับโปรเจกต์ Firebase
+   (ก๊อปจาก index.html ของ plp-finance ได้เลย)
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE.firebaseapp.com",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE.appspot.com",
+  messagingSenderId: "PASTE",
+  appId: "PASTE"
+};
+
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------- helpers ---------- */
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const pad = n => String(n).padStart(2, "0");
+const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => dstr(new Date());
+const monthOf = s => (s || "").slice(0, 7);
+const nf = n => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("th-TH");
+const money = n => "฿" + nf(n);
+const THMON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const thDate = s => { if (!s) return "-"; const [y,m,d] = s.split("-"); return `${+d} ${THMON[+m-1]} ${(+y+543)%100}`; };
+const daysLeft = s => { if (!s) return null; return Math.round((new Date(s+"T00:00:00") - new Date(today()+"T00:00:00")) / 86400000); };
+
+const DEFAULT_CATS = ["น้ำยา/เคมี","อะไหล่","อุปกรณ์","ของใช้สิ้นเปลือง","วัตถุดิบ","แพ็กเกจจิ้ง"];
+const DEFAULT_UNITS = ["ชิ้น","ขวด","ถุง","แกลลอน","กล่อง","กก.","ลิตร","แพ็ค","ม้วน","ชุด"];
+const MOVE_LABEL = { in:"รับเข้า", out:"เบิกออก", adj:"ปรับยอด" };
+const MOVE_COLOR = { in:"var(--green)", out:"var(--red)", adj:"var(--gold)" };
+
+/* ---------- ข้อมูลตั้งต้น (กดโหลดได้ในแท็บตั้งค่า) ---------- */
+const U_ALL = ["ชิ้น","ขวด","ถุง","แกลลอน","กล่อง","กระป๋อง","กระปุก","แพ็ค","ห่อ","ม้วน","ลัง","ชุด","กก.","ลิตร"];
+const C_LAUNDRY = ["น้ำยา/เคมี","ของใช้สิ้นเปลือง","อะไหล่","อุปกรณ์","แพ็กเกจจิ้ง"];
+const C_SPA = ["วัตถุดิบ","ของใช้สิ้นเปลือง","ผ้า/อุปกรณ์"];
+const C_TEA = ["ชา/ผง","นม/ครีม","ไซรัป/น้ำเชื่อม","ท็อปปิ้ง","แพ็กเกจจิ้ง","ของใช้สิ้นเปลือง"];
+
+/* [ชื่อ, หมวด, หน่วย, ยอด, ทุน/หน่วย, จุดสั่งซื้อ] */
+const I_LAUNDRY = [
+  ["น้ำยาซักผ้า 20 ลิตร","น้ำยา/เคมี","แกลลอน",2,850,1],
+  ["น้ำยาปรับผ้านุ่ม 20 ลิตร","น้ำยา/เคมี","แกลลอน",2,750,1],
+  ["น้ำยาซักผ้าขาว (คลอรีน)","น้ำยา/เคมี","แกลลอน",1,450,1],
+  ["ผงซักฟอกเติมเครื่อง","น้ำยา/เคมี","ถุง",3,180,2],
+  ["แผ่นอบผ้าหอม","น้ำยา/เคมี","กล่อง",2,120,1],
+  ["น้ำยาถูพื้น","น้ำยา/เคมี","ขวด",2,60,1],
+  ["น้ำยาเช็ดกระจก","น้ำยา/เคมี","ขวด",1,55,1],
+  ["ถุงขยะดำ 30x40","ของใช้สิ้นเปลือง","แพ็ค",3,45,2],
+  ["ถุงหูหิ้วใส่ผ้า","ของใช้สิ้นเปลือง","แพ็ค",5,35,3],
+  ["กระดาษทิชชู่ม้วนใหญ่","ของใช้สิ้นเปลือง","ห่อ",2,95,1],
+  ["สเปรย์แอลกอฮอล์","ของใช้สิ้นเปลือง","ขวด",2,50,1],
+  ["กระดาษสลิปความร้อน","ของใช้สิ้นเปลือง","ม้วน",6,20,4],
+  ["เทปกาวใส","ของใช้สิ้นเปลือง","ม้วน",3,15,2],
+  ["ปากกาเมจิก","ของใช้สิ้นเปลือง","ชิ้น",5,20,2],
+  ["ฟิลเตอร์ใยผ้า (เครื่องอบ)","อะไหล่","ชิ้น",4,150,2],
+  ["ลูกยางประตูเครื่องซัก","อะไหล่","ชิ้น",1,900,1],
+  ["สายพานเครื่องอบ","อะไหล่","ชิ้น",1,650,1],
+  ["หลอดไฟ LED","อะไหล่","ชิ้น",4,80,2],
+  ["ฟิวส์","อะไหล่","ชิ้น",6,25,3],
+  ["ตะกร้าผ้า","อุปกรณ์","ชิ้น",8,120,4],
+  ["ไม้แขวนเสื้อ","อุปกรณ์","ชิ้น",30,8,20],
+  ["ไม้กวาด + ที่โกยผง","อุปกรณ์","ชุด",1,150,1],
+  ["ผ้าม็อบถูพื้น","อุปกรณ์","ชิ้น",2,90,1],
+];
+const I_TEDDY_EXTRA = [
+  ["ถุงพลาสติกใส่ผ้าพับ","แพ็กเกจจิ้ง","แพ็ค",4,60,2],
+  ["สติกเกอร์ติดถุง","แพ็กเกจจิ้ง","ม้วน",2,120,1],
+  ["ใบเสร็จรับฝากผ้า","แพ็กเกจจิ้ง","ชุด",5,25,2],
+];
+const I_SPA = [
+  ["น้ำมันนวดตัว","วัตถุดิบ","ขวด",4,250,2],
+  ["สครับขัดผิว","วัตถุดิบ","กระปุก",3,320,1],
+  ["โลชั่นบำรุงผิว","วัตถุดิบ","ขวด",3,180,1],
+  ["น้ำมันหอมระเหย","วัตถุดิบ","ขวด",5,150,2],
+  ["มาส์กหน้า","วัตถุดิบ","แพ็ค",4,90,2],
+  ["ผ้าปูเตียงใช้แล้วทิ้ง","ของใช้สิ้นเปลือง","แพ็ค",5,120,2],
+  ["กางเกงกระดาษ","ของใช้สิ้นเปลือง","แพ็ค",4,80,2],
+  ["สำลีแผ่น","ของใช้สิ้นเปลือง","ถุง",6,35,3],
+  ["ถุงมือยาง","ของใช้สิ้นเปลือง","กล่อง",3,110,1],
+  ["เทียนอโรมา","ของใช้สิ้นเปลือง","ชิ้น",10,45,5],
+  ["ผ้าเช็ดตัวใหญ่","ผ้า/อุปกรณ์","ชิ้น",20,150,10],
+  ["ผ้าคลุมตัว","ผ้า/อุปกรณ์","ชิ้น",15,120,8],
+  ["ชามแช่เท้า","ผ้า/อุปกรณ์","ชิ้น",4,180,2],
+];
+const I_TEA = [
+  ["ชาแดง 500g","ชา/ผง","ถุง",4,210,2],
+  ["ชาเขียว 500g","ชา/ผง","ถุง",3,295,2],
+  ["ชาไทย 5kg","ชา/ผง","ถุง",1,1650,1],
+  ["มัทฉะ 100g","ชา/ผง","ถุง",2,175,1],
+  ["ผงชาเขียวนม 4kg","ชา/ผง","ถุง",1,1100,1],
+  ["โกโก้ Tulip 500g","ชา/ผง","ถุง",2,197,1],
+  ["ไมโล 900g","ชา/ผง","ถุง",1,185,1],
+  ["โอวัลตินเฟลค 450g","ชา/ผง","ถุง",1,115,1],
+  ["นมสด Meiji 5L","นม/ครีม","กล่อง",4,230,2],
+  ["นมข้นจืด Carnation 385g","นม/ครีม","กระป๋อง",12,25,6],
+  ["นมข้นหวาน Carnation 385g","นม/ครีม","กระป๋อง",12,25,6],
+  ["ผงชีส 1 (4kg)","นม/ครีม","ถุง",1,1900,1],
+  ["ผงชีส 2 (2.4kg)","นม/ครีม","ถุง",1,950,1],
+  ["บราวน์ชูการ์ 3.5L","ไซรัป/น้ำเชื่อม","แกลลอน",1,900,1],
+  ["ไซรัปพีช 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,150,1],
+  ["ไซรัปส้ม 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,150,1],
+  ["ไซรัปเมล่อน 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,150,1],
+  ["ไซรัปติ่งฟง 750ml","ไซรัป/น้ำเชื่อม","ขวด",3,75,2],
+  ["เฮลซ์บลูบอย 710ml","ไซรัป/น้ำเชื่อม","ขวด",2,70,1],
+  ["ไซรัปลองบีช 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,140,1],
+  ["ไข่มุก Echo 1kg","ท็อปปิ้ง","ถุง",6,40,3],
+  ["บุก 800g","ท็อปปิ้ง","ถุง",3,80,2],
+  ["พีช Dole (20 ชิ้น)","ท็อปปิ้ง","กระป๋อง",4,127,2],
+  ["น้ำมะพร้าว Malee","ท็อปปิ้ง","ขวด",3,71,2],
+  ["แก้ว (1000 ใบ)","แพ็กเกจจิ้ง","ลัง",2,2790,1],
+  ["ฝาซีล (4300 ใบ)","แพ็กเกจจิ้ง","ม้วน",1,1260,1],
+  ["หลอด","แพ็กเกจจิ้ง","ห่อ",5,60,3],
+  ["ถุงหิ้วใส่แก้ว","แพ็กเกจจิ้ง","แพ็ค",4,55,2],
+  ["ถุงขยะดำ","ของใช้สิ้นเปลือง","แพ็ค",3,45,2],
+  ["ทิชชู่ม้วน","ของใช้สิ้นเปลือง","ห่อ",2,95,1],
+];
+
+const mkItems = rows => rows.map(r => ({
+  id: uid(), name: r[0], cat: r[1], unit: r[2],
+  qty: Number(r[3]) || 0, cost: Number(r[4]) || 0, min: Number(r[5]) || 0, exp: "", emo: "📦"
+}));
+
+const SEED = {
+  shops: [
+    { id:"otteri", name:"Otteri สาขา 1", emo:"🧺", logo:"" },
+    { id:"teddy1", name:"Teddy สาขา 1", emo:"🧺", logo:"" },
+    { id:"teddy2", name:"Teddy สาขา 2", emo:"🧺", logo:"" },
+    { id:"spa",    name:"ร้านสปา",       emo:"🪷", logo:"" },
+    { id:"owlcha", name:"Owl Cha",       emo:"🧋", logo:"" },
+  ],
+  build(id) {
+    if (id === "owlcha") return { cats:C_TEA, units:U_ALL, items:mkItems(I_TEA) };
+    if (id === "spa")    return { cats:C_SPA, units:U_ALL, items:mkItems(I_SPA) };
+    const rows = id === "otteri" ? I_LAUNDRY : I_LAUNDRY.concat(I_TEDDY_EXTRA);
+    return { cats:C_LAUNDRY, units:U_ALL, items:mkItems(rows) };
+  }
+};
+
+function compressImg(file, max, q) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        let { width:w, height:h } = im;
+        const sc = Math.min(1, max / Math.max(w, h));
+        w = Math.round(w * sc); h = Math.round(h * sc);
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        const x = c.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0, 0, w, h);
+        x.drawImage(im, 0, 0, w, h);
+        res(c.toDataURL("image/jpeg", q));
+      };
+      im.onerror = rej; im.src = fr.result;
+    };
+    fr.onerror = rej; fr.readAsDataURL(file);
+  });
+}
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+/* localStorage ที่ปลอดภัย — ถ้าเบราว์เซอร์บล็อก จะใช้หน่วยความจำแทน (ไม่ทำให้จอขาว) */
+const MEM = {};
+const LS = {
+  get(k) { try { const v = localStorage.getItem(k); return v === null ? (MEM[k] === undefined ? null : MEM[k]) : v; } catch (e) { return MEM[k] === undefined ? null : MEM[k]; } },
+  set(k, v) { MEM[k] = v; try { localStorage.setItem(k, v); } catch (e) {} },
+  keys() { try { return Object.keys(localStorage); } catch (e) { return Object.keys(MEM); } }
+};
+
+/* ---------- firebase ---------- */
+let db = null, fbReady = false;
+try {
+  if (FIREBASE_CONFIG.apiKey !== "PASTE_API_KEY") {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    firebase.auth().signInAnonymously().catch(() => {});
+    fbReady = true;
+  }
+} catch (e) { console.error(e); }
+
+/* ถ้ายังไม่ได้ใส่ค่า Firebase → ทำงานใน "โหมดทดลอง" เก็บข้อมูลในเครื่องแทน */
+const LOCAL_MODE = !fbReady;
+const LKEY = p => "psdb:" + p;
+
+async function getDoc(p) {
+  if (LOCAL_MODE) { const v = LS.get(LKEY(p)); try { return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  try { const s = await db.doc(p).get(); return s.exists ? s.data() : null; } catch (e) { console.error(p, e); return null; }
+}
+async function setDoc(p, data) {
+  if (LOCAL_MODE) {
+    const old = (await getDoc(p)) || {};
+    LS.set(LKEY(p), JSON.stringify({ ...old, ...data }));
+    return true;
+  }
+  try { await db.doc(p).set(data, { merge:true }); return true; } catch (e) { console.error(p, e); return false; }
+}
+
+/* เฝ้าดูแบบเรียลไทม์ — ทุกเครื่องเห็นการแก้ไขทันที */
+function watchDoc(p, cb) {
+  if (LOCAL_MODE) { getDoc(p).then(cb); return () => {}; }
+  return db.doc(p).onSnapshot(
+    s => cb(s.exists ? s.data() : null),
+    e => console.error("watch " + p, e)
+  );
+}
+
+/* เขียนแบบ transaction — อ่านของล่าสุดก่อนเขียนเสมอ กันสองเครื่องเขียนทับกัน */
+async function txDoc(p, mutate) {
+  if (LOCAL_MODE) {
+    const cur = (await getDoc(p)) || {};
+    const next = mutate(cur);
+    LS.set(LKEY(p), JSON.stringify(next));
+    return next;
+  }
+  const ref = db.doc(p);
+  return db.runTransaction(async t => {
+    const s = await t.get(ref);
+    const next = mutate(s.exists ? s.data() : {});
+    t.set(ref, next);
+    return next;
+  });
+}
+
+/* ต่อท้ายประวัติโดยไม่แตะของเดิม */
+async function appendMoves(p, arr) {
+  if (LOCAL_MODE) {
+    const cur = (await getDoc(p)) || {};
+    LS.set(LKEY(p), JSON.stringify({ moves: [...arr, ...(cur.moves || [])] }));
+    return;
+  }
+  await db.doc(p).set({ moves: firebase.firestore.FieldValue.arrayUnion(...arr) }, { merge:true });
+}
+async function removeMoveDoc(p, mv) {
+  if (LOCAL_MODE) {
+    const cur = (await getDoc(p)) || {};
+    LS.set(LKEY(p), JSON.stringify({ moves: (cur.moves || []).filter(x => x.id !== mv.id) }));
+    return;
+  }
+  await db.doc(p).set({ moves: firebase.firestore.FieldValue.arrayRemove(mv) }, { merge:true });
+}
+
+/* คำนวณยอดใหม่จากรายการเคลื่อนไหว */
+function applyDelta(list, moves) {
+  return list.map(it => {
+    const rel = moves.filter(m => m.itemId === it.id);
+    if (!rel.length) return it;
+    let q = Number(it.qty) || 0;
+    rel.forEach(m => {
+      if (m.type === "in") q += Number(m.qty);
+      else if (m.type === "out") q -= Number(m.qty);
+      else q = Number(m.qty);
+    });
+    return { ...it, qty: Math.round(q * 1000) / 1000 };
+  });
+}
+function undoDelta(list, mv) {
+  if (mv.type === "adj") return list;
+  return list.map(it => {
+    if (it.id !== mv.itemId) return it;
+    let q = Number(it.qty) || 0;
+    q += mv.type === "in" ? -Number(mv.qty) : Number(mv.qty);
+    return { ...it, qty: Math.round(q * 1000) / 1000 };
+  });
+}
+
+/* ============================================================
+   UI ย่อย
+   ============================================================ */
+function Sheet({ title, onClose, children }) {
+  return (
+    <div className="sheet">
+      <div className="scrim" onClick={onClose}></div>
+      <div className="sheet-in">
+        <div className="row" style={{ marginBottom:14 }}>
+          <div style={{ fontWeight:600, fontSize:17, flex:1 }}>{title}</div>
+          <button className="press" onClick={onClose}
+            style={{ width:34, height:34, borderRadius:999, background:"var(--tint)", fontSize:16 }}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return <div style={{ marginBottom:12 }}><span className="lbl">{label}</span>{children}</div>;
+}
+
+function ItemThumb({ item, img }) {
+  if (img) return <img className="thumb" src={img} alt="" />;
+  return <div className="thumb">{item.emo || "📦"}</div>;
+}
+
+function StatCard({ label, value, sub, color }) {
+  return (
+    <div className="card" style={{ padding:"12px 14px", flex:1, minWidth:0 }}>
+      <div className="lbl" style={{ marginBottom:2 }}>{label}</div>
+      <div className="big" style={{ color: color || "var(--navy)" }}>{value}</div>
+      {sub ? <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{sub}</div> : null}
+    </div>
+  );
+}
+
+/* ============================================================
+   APP
+   ============================================================ */
+function App() {
+  const [booting, setBooting] = useState(true);
+  const [shops, setShops] = useState([]);
+  const [shopId, setShopId] = useState(LS.get("ps_shop") || "");
+  const [role, setRole] = useState(LS.get("ps_role") || "staff");
+  const [cfg, setCfg] = useState({ ownerPin:"1234" });
+  const [tab, setTab] = useState("stock");
+
+  const [items, setItems] = useState([]);
+  const [cats, setCats] = useState(DEFAULT_CATS);
+  const [units, setUnits] = useState(DEFAULT_UNITS);
+  const [photos, setPhotos] = useState({});
+  const [moves, setMoves] = useState({});          // { "YYYY-MM": [ ... ] }
+  const [loadingShop, setLoadingShop] = useState(false);
+  const [toast, setToast] = useState("");
+  const [online, setOnline] = useState(false);
+  const [sheet, setSheet] = useState(null);        // {type, data}
+
+  const isOwner = role === "owner";
+  const shop = useMemo(() => shops.find(s => s.id === shopId) || null, [shops, shopId]);
+
+  const say = m => { setToast(m); setTimeout(() => setToast(""), 1800); };
+
+  /* ---- boot: เฝ้าดูรายชื่อร้าน + ตั้งค่า ---- */
+  useEffect(() => {
+    const u1 = watchDoc("stockApp/shops", d => {
+      setShops((d && d.list) || []);
+      setOnline(true);
+      setBooting(false);
+    });
+    const u2 = watchDoc("stockApp/config", d => { if (d) setCfg({ ownerPin: d.ownerPin || "1234" }); });
+    const t = setTimeout(() => setBooting(false), 6000);
+    return () => { u1(); u2(); clearTimeout(t); };
+  }, []);
+
+  /* เลือกร้านแรกอัตโนมัติ */
+  useEffect(() => {
+    if (shops.length && !shops.some(x => x.id === shopId)) setShopId(shops[0].id);
+  }, [shops]);
+
+  /* ---- เฝ้าดูข้อมูลร้านที่เลือก ---- */
+  useEffect(() => {
+    if (!shopId) return;
+    setLoadingShop(true);
+    setMoves({});
+    const mk = monthOf(today());
+    const u1 = watchDoc("stockItems/" + shopId, d => {
+      setItems((d && d.items) || []);
+      setCats((d && d.cats && d.cats.length) ? d.cats : DEFAULT_CATS);
+      setUnits((d && d.units && d.units.length) ? d.units : DEFAULT_UNITS);
+      setLoadingShop(false);
+    });
+    const u2 = watchDoc("stockPhotos/" + shopId, d => setPhotos((d && d.p) || {}));
+    const u3 = watchDoc(`stockMoves/${shopId}_${mk}`, d =>
+      setMoves(prev => ({ ...prev, [mk]: (d && d.moves) || [] })));
+    LS.set("ps_shop", shopId);
+    return () => { u1(); u2(); u3(); };
+  }, [shopId]);
+
+  /* ---- writers (transaction ทุกครั้ง) ---- */
+  const saveItems = async (nextItems, nextCats, nextUnits) => {
+    if (nextItems) setItems(nextItems);
+    if (nextCats) setCats(nextCats);
+    if (nextUnits) setUnits(nextUnits);
+    await txDoc("stockItems/" + shopId, cur => ({
+      ...cur,
+      items: nextItems || cur.items || [],
+      cats:  nextCats  || cur.cats  || cats,
+      units: nextUnits || cur.units || units
+    }));
+  };
+
+  const upsertItem = async it => {
+    setItems(prev => prev.some(x => x.id === it.id) ? prev.map(x => x.id === it.id ? it : x) : [...prev, it]);
+    await txDoc("stockItems/" + shopId, cur => {
+      const arr = (cur.items || []).slice();
+      const k = arr.findIndex(x => x.id === it.id);
+      if (k >= 0) arr[k] = it; else arr.push(it);
+      return { ...cur, items: arr, cats: cur.cats || cats, units: cur.units || units };
+    });
+  };
+
+  const removeItem = async id => {
+    setItems(prev => prev.filter(x => x.id !== id));
+    await txDoc("stockItems/" + shopId, cur => ({ ...cur, items: (cur.items || []).filter(x => x.id !== id) }));
+  };
+
+  const savePhoto = async (itemId, dataUrl) => {
+    await txDoc("stockPhotos/" + shopId, cur => {
+      const p = { ...(cur.p || {}) };
+      if (dataUrl) p[itemId] = dataUrl; else delete p[itemId];
+      return { p };
+    });
+  };
+
+  const saveShops = async list => {
+    setShops(list);
+    await txDoc("stockApp/shops", () => ({ list }));
+  };
+
+  const ensureMonth = async mk => {
+    if (moves[mk]) return moves[mk];
+    const m = await getDoc(`stockMoves/${shopId}_${mk}`);
+    const arr = (m && m.moves) || [];
+    setMoves(prev => ({ ...prev, [mk]: arr }));
+    return arr;
+  };
+
+  const addMoves = async list => {
+    if (!list.length) return;
+    const byMonth = {};
+    list.forEach(mv => { const k = monthOf(mv.date); (byMonth[k] = byMonth[k] || []).push(mv); });
+    setItems(prev => applyDelta(prev, list));
+    setMoves(prev => {
+      const n = { ...prev };
+      Object.keys(byMonth).forEach(k => { n[k] = [...byMonth[k], ...(n[k] || [])]; });
+      return n;
+    });
+    await txDoc("stockItems/" + shopId, cur => ({
+      ...cur,
+      items: applyDelta(cur.items || [], list),
+      cats: cur.cats || cats, units: cur.units || units
+    }));
+    for (const k of Object.keys(byMonth)) await appendMoves(`stockMoves/${shopId}_${k}`, byMonth[k]);
+  };
+
+  const delMove = async mv => {
+    const k = monthOf(mv.date);
+    setMoves(prev => ({ ...prev, [k]: (prev[k] || []).filter(x => x.id !== mv.id) }));
+    setItems(prev => undoDelta(prev, mv));
+    await txDoc("stockItems/" + shopId, cur => ({ ...cur, items: undoDelta(cur.items || [], mv) }));
+    await removeMoveDoc(`stockMoves/${shopId}_${k}`, mv);
+    say("ลบแล้ว");
+  };
+
+  const askOwner = () => {
+    if (isOwner) { setRole("staff"); LS.set("ps_role","staff"); say("โหมดพนักงาน"); return; }
+    const p = prompt("ใส่ PIN เจ้าของ");
+    if (p === null) return;
+    if (p === cfg.ownerPin) { setRole("owner"); LS.set("ps_role","owner"); say("โหมดเจ้าของ ✓"); }
+    else say("PIN ไม่ถูกต้อง");
+  };
+
+  const loadSeed = async () => {
+    if (shops.length && !confirm("เพิ่มร้านตัวอย่างทับของเดิม? (ร้านที่มีอยู่จะไม่ถูกลบ)")) return;
+    say("กำลังสร้าง…");
+    const merged = shops.slice();
+    for (const s of SEED.shops) {
+      if (!merged.some(x => x.id === s.id)) merged.push(s);
+      const cur = await getDoc("stockItems/" + s.id);
+      if (!cur || !(cur.items || []).length) await setDoc("stockItems/" + s.id, SEED.build(s.id));
+    }
+    await saveShops(merged);
+    setShopId(merged[0].id);
+    say("โหลดข้อมูลตัวอย่างแล้ว ✓");
+  };
+
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, items }, null, 1)], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `stock-backup-${shopId}-${today()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  };
+
+  const importJson = file => {
+    const fr = new FileReader();
+    fr.onload = async () => {
+      try {
+        const d = JSON.parse(fr.result);
+        if (!Array.isArray(d.items)) throw new Error("ไฟล์ไม่ถูกต้อง");
+        if (!confirm(`นำเข้า ${d.items.length} รายการ ทับข้อมูลร้าน ${shop ? shop.name : ""} ?`)) return;
+        await saveItems(d.items, d.cats || cats, d.units || units);
+        say("นำเข้าแล้ว ✓");
+      } catch (e) { alert("นำเข้าไม่สำเร็จ: " + e.message); }
+    };
+    fr.readAsText(file);
+  };
+
+  /* ---- derived ---- */
+  const lowItems = useMemo(
+    () => items.filter(i => Number(i.min) > 0 && Number(i.qty) <= Number(i.min)),
+    [items]
+  );
+  const stockValue = useMemo(
+    () => items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.cost) || 0), 0),
+    [items]
+  );
+  const expSoon = useMemo(
+    () => items.filter(i => i.exp && daysLeft(i.exp) !== null && daysLeft(i.exp) <= 7),
+    [items]
+  );
+
+  /* ---- screens ---- */
+  if (booting) return <div className="empty" style={{ paddingTop:120 }}>กำลังโหลด…</div>;
+
+  const TABS = [
+    { k:"stock",  ic:"📦", t:"คลัง" },
+    { k:"move",   ic:"🔁", t:"รับ-เบิก" },
+    { k:"count",  ic:"📋", t:"นับสต๊อก" },
+    { k:"report", ic:"📊", t:"สรุป" },
+    { k:"setup",  ic:"⚙️", t:"ตั้งค่า" },
+  ];
+
+  return (
+    <div style={{ paddingBottom:78 }}>
+      <Header shops={shops} shop={shop} setShopId={setShopId} isOwner={isOwner}
+        onRole={askOwner} stockValue={stockValue} low={lowItems.length} items={items.length} />
+
+      {!LOCAL_MODE ? (
+        <div style={{ display:"flex", justifyContent:"center", marginTop:8 }}>
+          <span style={{ fontSize:11.5, color: online ? "var(--green)" : "var(--muted)",
+            background:"#fff", border:"1px solid var(--line)", borderRadius:999, padding:"3px 12px" }}>
+            {online ? "🟢 ออนไลน์ · ซิงก์ทุกเครื่องอัตโนมัติ" : "⚪ กำลังเชื่อมต่อ…"}
+          </span>
+        </div>
+      ) : null}
+
+      {LOCAL_MODE ? (
+        <div style={{ margin:"10px 16px 0", background:"#FFF3E2", border:"1px solid #F0D9B4",
+          borderRadius:14, padding:"9px 13px", fontSize:12.5, lineHeight:1.55 }}>
+          🧪 <b>โหมดทดลอง</b> — ข้อมูลเก็บในเครื่องนี้เท่านั้น ยังไม่ซิงก์ข้ามอุปกรณ์<br/>
+          ใส่ค่า <b>FIREBASE_CONFIG</b> ใน index.html เมื่อพร้อม แล้วจะกลายเป็นระบบจริงทันที
+        </div>
+      ) : null}
+
+      {loadingShop ? <div className="empty">กำลังโหลดข้อมูลร้าน…</div> : null}
+
+      {!shops.length ? (
+        <div style={{ padding:16 }}>
+          <div className="card" style={{ padding:20, textAlign:"center" }}>
+            <div style={{ fontSize:40 }}>🏪</div>
+            <div style={{ fontWeight:600, margin:"6px 0 4px" }}>ยังไม่มีร้าน</div>
+            <div style={{ color:"var(--muted)", fontSize:13, marginBottom:14 }}>
+              เริ่มด้วยชุดตัวอย่าง 5 ร้าน (Otteri · Teddy 1 · Teddy 2 · สปา · Owl Cha)<br/>พร้อมรายการของและราคาทุนจริง
+            </div>
+            <button className="btn gold press" style={{ width:"100%", marginBottom:8 }} onClick={loadSeed}>
+              ✨ โหลดข้อมูลตัวอย่าง
+            </button>
+            <button className="btn ghost press" style={{ width:"100%" }} onClick={() => setSheet({ type:"shop", data:null })}>
+              ➕ เพิ่มร้านเอง
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {tab === "stock"  && <TabStock  {...{ items, cats, photos, lowItems, expSoon, isOwner, setSheet, say }} />}
+          {tab === "move"   && <TabMove   {...{ items, photos, moves, addMoves, delMove, ensureMonth, isOwner, say }} />}
+          {tab === "count"  && <TabCount  {...{ items, cats, addMoves, say }} />}
+          {tab === "report" && <TabReport {...{ items, cats, moves, ensureMonth, stockValue, lowItems, shop, isOwner }} />}
+          {tab === "setup"  && <TabSetup  {...{ shops, shop, saveShops, setShopId, cats, units, items, saveItems, isOwner, cfg, setCfg, setSheet, say, loadSeed, exportJson, importJson }} />}
+        </>
+      )}
+
+      <div className="nav">
+        {TABS.map(x => (
+          <button key={x.k} className={tab === x.k ? "on" : ""} onClick={() => setTab(x.k)}>
+            <span className="ic">{x.ic}</span>{x.t}
+          </button>
+        ))}
+      </div>
+
+      {sheet && sheet.type === "item" &&
+        <ItemSheet item={sheet.data} cats={cats} units={units} items={items}
+          photo={sheet.data ? photos[sheet.data.id] : null}
+          isOwner={isOwner} onClose={() => setSheet(null)}
+          onSave={async (it, img) => {
+            await upsertItem(it);
+            if (img !== undefined) await savePhoto(it.id, img);
+            setSheet(null); say("บันทึกแล้ว ✓");
+          }}
+          onDelete={async it => {
+            if (!confirm("ลบ " + it.name + " ?")) return;
+            await removeItem(it.id);
+            await savePhoto(it.id, null);
+            setSheet(null); say("ลบแล้ว");
+          }} />}
+
+      {sheet && sheet.type === "quick" &&
+        <QuickMove item={sheet.data} onClose={() => setSheet(null)}
+          onSave={async mv => { await addMoves([mv]); setSheet(null); say("บันทึกแล้ว ✓"); }} />}
+
+      {sheet && sheet.type === "shop" &&
+        <ShopSheet shop={sheet.data} onClose={() => setSheet(null)}
+          onSave={async sh => {
+            const exists = shops.some(x => x.id === sh.id);
+            await saveShops(exists ? shops.map(x => x.id === sh.id ? sh : x) : [...shops, sh]);
+            if (!exists) setShopId(sh.id);
+            setSheet(null); say("บันทึกแล้ว ✓");
+          }}
+          onDelete={async sh => {
+            if (!confirm("ลบร้าน " + sh.name + " ? (ข้อมูลสต๊อกยังอยู่ในระบบ)")) return;
+            const next = shops.filter(x => x.id !== sh.id);
+            await saveShops(next);
+            setShopId(next.length ? next[0].id : "");
+            setSheet(null);
+          }} />}
+
+      {toast ? (
+        <div style={{ position:"fixed", bottom:92, left:0, right:0, display:"flex", justifyContent:"center", zIndex:70 }}>
+          <div style={{ background:"var(--navy)", color:"#fff", padding:"9px 18px", borderRadius:999, fontSize:13.5 }}>{toast}</div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------- Header ---------- */
+function Header({ shops, shop, setShopId, isOwner, onRole, stockValue, low, items }) {
+  return (
+    <div className="hdr">
+      <div className="row">
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:11, opacity:.72, letterSpacing:1 }}>PLP STOCK</div>
+          <div style={{ fontSize:19, fontWeight:600 }}>{shop ? shop.name : "เช็คสต๊อก"}</div>
+        </div>
+        <button className="press" onClick={onRole}
+          style={{ background:"rgba(255,255,255,.14)", borderRadius:999, padding:"6px 13px", fontSize:12.5, color:"#fff" }}>
+          {isOwner ? "👑 เจ้าของ" : "👤 พนักงาน"}
+        </button>
+      </div>
+
+      {shops.length > 1 ? (
+        <div style={{ display:"flex", gap:8, overflowX:"auto", margin:"12px -4px 0", padding:"0 4px 2px" }}>
+          {shops.map(s => {
+            const on = shop && s.id === shop.id;
+            return (
+              <button key={s.id} className="press" onClick={() => setShopId(s.id)}
+                style={{ display:"flex", alignItems:"center", gap:7, padding:"7px 13px", borderRadius:999,
+                  background: on ? "#fff" : "rgba(255,255,255,.12)", color: on ? "var(--navy)" : "#fff",
+                  fontWeight: on ? 500 : 400, fontSize:13, whiteSpace:"nowrap", flex:"none" }}>
+                <span>{s.emo || "🏪"}</span>{s.name}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <div style={{ display:"flex", gap:8, marginTop:14 }}>
+        <div style={{ flex:1, background:"rgba(255,255,255,.11)", borderRadius:14, padding:"9px 12px" }}>
+          <div style={{ fontSize:10.5, opacity:.7 }}>รายการทั้งหมด</div>
+          <div style={{ fontSize:19, fontWeight:600 }}>{items}</div>
+        </div>
+        <div style={{ flex:1, background: low ? "rgba(220,90,100,.28)" : "rgba(255,255,255,.11)", borderRadius:14, padding:"9px 12px" }}>
+          <div style={{ fontSize:10.5, opacity:.75 }}>ต้องสั่งซื้อ</div>
+          <div style={{ fontSize:19, fontWeight:600 }}>{low}</div>
+        </div>
+        {isOwner ? (
+          <div style={{ flex:1.3, background:"rgba(198,139,74,.32)", borderRadius:14, padding:"9px 12px" }}>
+            <div style={{ fontSize:10.5, opacity:.8 }}>มูลค่าสต๊อก</div>
+            <div style={{ fontSize:19, fontWeight:600 }}>{money(stockValue)}</div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- TAB: คลัง ---------- */
+function TabStock({ items, cats, photos, lowItems, expSoon, isOwner, setSheet, say }) {
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("*");
+  const [onlyLow, setOnlyLow] = useState(false);
+
+  const list = useMemo(() => {
+    let r = items.slice();
+    if (cat !== "*") r = r.filter(i => i.cat === cat);
+    if (q.trim()) { const s = q.trim().toLowerCase(); r = r.filter(i => (i.name || "").toLowerCase().includes(s)); }
+    if (onlyLow) r = r.filter(i => Number(i.min) > 0 && Number(i.qty) <= Number(i.min));
+    return r.sort((a, b) => (a.cat || "").localeCompare(b.cat || "", "th") || (a.name || "").localeCompare(b.name || "", "th"));
+  }, [items, q, cat, onlyLow]);
+
+  const copyOrder = () => {
+    if (!lowItems.length) { say("ไม่มีรายการต้องสั่ง"); return; }
+    const txt = "🛒 รายการต้องสั่งซื้อ\n" + lowItems
+      .map(i => `• ${i.name} — เหลือ ${nf(i.qty)} ${i.unit || ""} (เกณฑ์ ${nf(i.min)})`).join("\n");
+    navigator.clipboard.writeText(txt).then(() => say("คัดลอกแล้ว ✓"), () => say("คัดลอกไม่ได้"));
+  };
+
+  return (
+    <div>
+      <div style={{ padding:"14px 16px 6px" }}>
+        <input placeholder="🔍 ค้นหาชื่อของ…" value={q} onChange={e => setQ(e.target.value)} />
+      </div>
+      <div className="scroll-x">
+        <button className={"chip press " + (cat === "*" && !onlyLow ? "on" : "")}
+          onClick={() => { setCat("*"); setOnlyLow(false); }}>ทั้งหมด</button>
+        <button className={"chip press " + (onlyLow ? "on" : "")}
+          onClick={() => { setOnlyLow(!onlyLow); setCat("*"); }}
+          style={ onlyLow ? { background:"var(--red)", borderColor:"var(--red)" } : {}}>🔴 ต้องสั่ง {lowItems.length}</button>
+        {cats.map(c => (
+          <button key={c} className={"chip press " + (cat === c ? "on" : "")}
+            onClick={() => { setCat(c); setOnlyLow(false); }}>{c}</button>
+        ))}
+      </div>
+
+      {expSoon.length ? (
+        <div style={{ margin:"4px 16px 10px", background:"#FFF3E2", border:"1px solid #F0D9B4",
+          borderRadius:14, padding:"10px 13px", fontSize:13 }}>
+          ⏳ ใกล้หมดอายุ {expSoon.length} รายการ — {expSoon.slice(0,3).map(i => i.name).join(", ")}
+        </div>
+      ) : null}
+
+      <div style={{ padding:"0 16px", display:"flex", gap:8, marginBottom:10 }}>
+        <button className="btn press" style={{ flex:1 }} onClick={() => setSheet({ type:"item", data:null })}>➕ เพิ่มของ</button>
+        <button className="btn ghost press" onClick={copyOrder}>📋 คัดลอกรายการสั่ง</button>
+      </div>
+
+      {!list.length ? <div className="empty">ไม่มีรายการ</div> : null}
+
+      <div style={{ padding:"0 16px", display:"grid", gap:8 }}>
+        {list.map(it => {
+          const low = Number(it.min) > 0 && Number(it.qty) <= Number(it.min);
+          const dl = it.exp ? daysLeft(it.exp) : null;
+          return (
+            <div key={it.id} className="card press" onClick={() => setSheet({ type:"quick", data:it })}
+              style={{ padding:11, display:"flex", gap:11, alignItems:"center",
+                borderColor: low ? "#EFC3C9" : "var(--line)" }}>
+              <ItemThumb item={it} img={photos[it.id]} />
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:500, fontSize:14.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{it.name}</div>
+                <div style={{ fontSize:11.5, color:"var(--muted)", display:"flex", gap:6, flexWrap:"wrap", marginTop:2 }}>
+                  <span>{it.cat || "ไม่ระบุหมวด"}</span>
+                  {isOwner && Number(it.cost) ? <span>· ทุน {money(it.cost)}/{it.unit}</span> : null}
+                  {dl !== null ? <span style={{ color: dl <= 7 ? "var(--red)" : "var(--muted)" }}>· หมดอายุ {thDate(it.exp)}</span> : null}
+                </div>
+              </div>
+              <div style={{ textAlign:"right", flex:"none" }}>
+                <div style={{ fontSize:19, fontWeight:600, color: low ? "var(--red)" : "var(--navy)" }}>{nf(it.qty)}</div>
+                <div style={{ fontSize:11, color:"var(--muted)" }}>{it.unit || ""}</div>
+              </div>
+              <button className="press" onClick={e => { e.stopPropagation(); setSheet({ type:"item", data:it }); }}
+                style={{ width:32, height:32, borderRadius:10, background:"var(--tint)", flex:"none" }}>✏️</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- TAB: รับ-เบิก ---------- */
+function TabMove({ items, photos, moves, addMoves, delMove, ensureMonth, isOwner, say }) {
+  const [mk, setMk] = useState(monthOf(today()));
+  const [type, setType] = useState("out");
+  const [itemId, setItemId] = useState("");
+  const [qty, setQty] = useState("");
+  const [note, setNote] = useState("");
+  const [by, setBy] = useState(LS.get("ps_by") || "");
+
+  useEffect(() => { ensureMonth(mk); }, [mk]);
+
+  const list = (moves[mk] || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const item = items.find(i => i.id === itemId);
+
+  const submit = async () => {
+    if (!itemId) { say("เลือกรายการก่อน"); return; }
+    const n = Number(qty);
+    if (!n || n <= 0) { say("ใส่จำนวนให้ถูกต้อง"); return; }
+    LS.set("ps_by", by);
+    await addMoves([{ id:uid(), ts:Date.now(), date:today(), itemId, type, qty:n,
+      cost:Number(item && item.cost) || 0, note:note.trim(), by:by.trim() }]);
+    setQty(""); setNote(""); say("บันทึกแล้ว ✓");
+  };
+
+  const months = useMemo(() => {
+    const r = []; const d = new Date();
+    for (let i = 0; i < 12; i++) { r.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); d.setMonth(d.getMonth()-1); }
+    return r;
+  }, []);
+
+  return (
+    <div style={{ padding:"14px 16px" }}>
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+          {["in","out","adj"].map(t => (
+            <button key={t} className="press" onClick={() => setType(t)}
+              style={{ flex:1, padding:"10px 0", borderRadius:12, fontSize:14, fontWeight:500,
+                background: type === t ? MOVE_COLOR[t] : "var(--tint)",
+                color: type === t ? "#fff" : "var(--muted)" }}>
+              {t === "in" ? "＋ รับเข้า" : t === "out" ? "－ เบิกออก" : "⇄ ปรับยอด"}
+            </button>
+          ))}
+        </div>
+        <Field label="รายการ">
+          <select value={itemId} onChange={e => setItemId(e.target.value)}>
+            <option value="">— เลือกของ —</option>
+            {items.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"))
+              .map(i => <option key={i.id} value={i.id}>{i.name} ({nf(i.qty)} {i.unit})</option>)}
+          </select>
+        </Field>
+        <Field label={type === "adj" ? "ยอดคงเหลือจริง" : "จำนวน"}>
+          <div className="row">
+            <button className="btn ghost press" style={{ width:48 }}
+              onClick={() => setQty(String(Math.max(0, (Number(qty)||0) - 1)))}>−</button>
+            <input type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)}
+              style={{ textAlign:"center", fontSize:20, fontWeight:600 }} placeholder="0" />
+            <button className="btn ghost press" style={{ width:48 }}
+              onClick={() => setQty(String((Number(qty)||0) + 1))}>＋</button>
+            <div style={{ width:52, textAlign:"center", color:"var(--muted)", fontSize:13 }}>{item ? item.unit : ""}</div>
+          </div>
+        </Field>
+        <div className="row" style={{ gap:8 }}>
+          <div style={{ flex:1.4 }}><Field label="หมายเหตุ"><input value={note} onChange={e => setNote(e.target.value)} placeholder="เช่น เติมเครื่อง 3" /></Field></div>
+          <div style={{ flex:1 }}><Field label="ผู้บันทึก"><input value={by} onChange={e => setBy(e.target.value)} placeholder="ชื่อ" /></Field></div>
+        </div>
+        <button className="btn press" style={{ width:"100%" }} onClick={submit}>บันทึก</button>
+      </div>
+
+      <div className="row" style={{ marginBottom:8 }}>
+        <div style={{ fontWeight:600, flex:1 }}>ประวัติเคลื่อนไหว</div>
+        <select value={mk} onChange={e => setMk(e.target.value)} style={{ width:130, padding:"7px 10px", fontSize:14 }}>
+          {months.map(m => <option key={m} value={m}>{THMON[+m.slice(5)-1]} {(+m.slice(0,4)+543)%100}</option>)}
+        </select>
+      </div>
+
+      {!list.length ? <div className="empty">ยังไม่มีรายการเดือนนี้</div> : null}
+      <div style={{ display:"grid", gap:7 }}>
+        {list.map(mv => {
+          const it = items.find(i => i.id === mv.itemId);
+          return (
+            <div key={mv.id} className="card" style={{ padding:"10px 12px", display:"flex", gap:10, alignItems:"center" }}>
+              <div className="thumb" style={{ width:36, height:36, fontSize:15, background: MOVE_COLOR[mv.type], color:"#fff" }}>
+                {mv.type === "in" ? "＋" : mv.type === "out" ? "－" : "⇄"}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:500 }}>{it ? it.name : "(ลบแล้ว)"}</div>
+                <div style={{ fontSize:11.5, color:"var(--muted)" }}>
+                  {thDate(mv.date)} · {MOVE_LABEL[mv.type]}{mv.by ? " · " + mv.by : ""}{mv.note ? " · " + mv.note : ""}
+                </div>
+              </div>
+              <div style={{ fontWeight:600, color: MOVE_COLOR[mv.type] }}>{nf(mv.qty)}</div>
+              {isOwner ? (
+                <button className="press" onClick={() => { if (confirm(mv.type === "adj" ? "ลบประวัติการปรับยอดนี้? (ยอดคงเหลือจะไม่ถูกย้อนกลับ)" : "ลบรายการนี้ และคืนยอดสต๊อก?")) delMove(mv); }}
+                  style={{ width:30, height:30, borderRadius:9, background:"var(--tint)", fontSize:13 }}>🗑</button>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- TAB: นับสต๊อก ---------- */
+function TabCount({ items, cats, addMoves, say }) {
+  const [cat, setCat] = useState("*");
+  const [vals, setVals] = useState({});
+  const [by, setBy] = useState(LS.get("ps_by") || "");
+
+  const list = useMemo(() => {
+    let r = items.slice();
+    if (cat !== "*") r = r.filter(i => i.cat === cat);
+    return r.sort((a, b) => (a.name || "").localeCompare(b.name || "", "th"));
+  }, [items, cat]);
+
+  const diffs = list.filter(i => vals[i.id] !== undefined && vals[i.id] !== "" &&
+    Number(vals[i.id]) !== (Number(i.qty) || 0));
+
+  const submit = async () => {
+    if (!diffs.length) { say("ไม่มีผลต่าง"); return; }
+    if (!confirm(`ปรับยอด ${diffs.length} รายการ?`)) return;
+    LS.set("ps_by", by);
+    await addMoves(diffs.map(i => ({
+      id:uid(), ts:Date.now(), date:today(), itemId:i.id, type:"adj",
+      qty:Number(vals[i.id]), cost:Number(i.cost) || 0,
+      note:`นับจริง (ระบบ ${nf(i.qty)})`, by:by.trim()
+    })));
+    setVals({}); say("ปรับยอดแล้ว ✓");
+  };
+
+  return (
+    <div style={{ padding:"14px 0" }}>
+      <div style={{ padding:"0 16px 10px", fontSize:13, color:"var(--muted)" }}>
+        กรอกเฉพาะของที่นับ — ช่องที่เว้นว่างจะไม่ถูกแก้
+      </div>
+      <div className="scroll-x">
+        <button className={"chip press " + (cat === "*" ? "on" : "")} onClick={() => setCat("*")}>ทั้งหมด</button>
+        {cats.map(c => <button key={c} className={"chip press " + (cat === c ? "on" : "")} onClick={() => setCat(c)}>{c}</button>)}
+      </div>
+
+      <div style={{ padding:"0 16px", display:"grid", gap:7 }}>
+        {list.map(i => {
+          const v = vals[i.id];
+          const has = v !== undefined && v !== "";
+          const d = has ? Number(v) - (Number(i.qty) || 0) : 0;
+          return (
+            <div key={i.id} className="card" style={{ padding:"10px 12px", display:"flex", gap:10, alignItems:"center" }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
+                <div style={{ fontSize:11.5, color:"var(--muted)" }}>ระบบ {nf(i.qty)} {i.unit}</div>
+              </div>
+              {has && d !== 0 ? (
+                <span className="tag" style={{ background: d > 0 ? "#E4F2EA" : "#FBE5E8", color: d > 0 ? "var(--green)" : "var(--red)" }}>
+                  {d > 0 ? "+" : ""}{nf(d)}
+                </span>
+              ) : null}
+              <input type="number" inputMode="decimal" placeholder="นับจริง" value={v === undefined ? "" : v}
+                onChange={e => setVals(p => ({ ...p, [i.id]: e.target.value }))}
+                style={{ width:96, textAlign:"center", fontWeight:600 }} />
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ padding:"14px 16px 0" }}>
+        <Field label="ผู้นับ"><input value={by} onChange={e => setBy(e.target.value)} placeholder="ชื่อผู้นับ" /></Field>
+        <button className="btn gold press" style={{ width:"100%" }} onClick={submit}>
+          บันทึกผลนับ {diffs.length ? `(ต่าง ${diffs.length} รายการ)` : ""}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- TAB: สรุป ---------- */
+function TabReport({ items, cats, moves, ensureMonth, stockValue, lowItems, shop, isOwner }) {
+  const [mode, setMode] = useState("month");
+  const [day, setDay] = useState(today());
+  const [mk, setMk] = useState(monthOf(today()));
+  const [yr, setYr] = useState(String(new Date().getFullYear()));
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setBusy(true);
+      if (mode === "year") { for (let m = 1; m <= 12; m++) await ensureMonth(`${yr}-${pad(m)}`); }
+      else if (mode === "month") await ensureMonth(mk);
+      else await ensureMonth(monthOf(day));
+      setBusy(false);
+    })();
+  }, [mode, day, mk, yr]);
+
+  const rows = useMemo(() => {
+    let all = [];
+    if (mode === "year") { for (let m = 1; m <= 12; m++) all = all.concat(moves[`${yr}-${pad(m)}`] || []); }
+    else if (mode === "month") all = (moves[mk] || []).slice();
+    else all = (moves[monthOf(day)] || []).filter(m => m.date === day);
+    return all;
+  }, [mode, day, mk, yr, moves]);
+
+  const sum = useMemo(() => {
+    let inQ = 0, outQ = 0, inV = 0, outV = 0;
+    const byCat = {};
+    rows.forEach(m => {
+      const it = items.find(i => i.id === m.itemId);
+      const c = (it && it.cat) || "ไม่ระบุหมวด";
+      const cost = Number(m.cost) || (it ? Number(it.cost) || 0 : 0);
+      byCat[c] = byCat[c] || { inQ:0, outQ:0, inV:0, outV:0 };
+      if (m.type === "in")  { inQ  += +m.qty; inV  += m.qty * cost; byCat[c].inQ  += +m.qty; byCat[c].inV  += m.qty * cost; }
+      if (m.type === "out") { outQ += +m.qty; outV += m.qty * cost; byCat[c].outQ += +m.qty; byCat[c].outV += m.qty * cost; }
+    });
+    return { inQ, outQ, inV, outV, byCat };
+  }, [rows, items]);
+
+  const topOut = useMemo(() => {
+    const m = {};
+    rows.filter(r => r.type === "out").forEach(r => { m[r.itemId] = (m[r.itemId] || 0) + Number(r.qty); });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8)
+      .map(([id, q]) => ({ it: items.find(i => i.id === id), q }));
+  }, [rows, items]);
+
+  const exportXlsx = async () => {
+    try {
+      if (!window.XLSX) await loadScript("https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js");
+      const XLSX = window.XLSX;
+      const wb = XLSX.utils.book_new();
+      const s1 = [["Item","Category","Unit","Qty","Cost","Value","Min","Expiry"]];
+      items.forEach(i => s1.push([i.name, i.cat || "", i.unit || "", Number(i.qty) || 0,
+        Number(i.cost) || 0, (Number(i.qty)||0)*(Number(i.cost)||0), Number(i.min) || 0, i.exp || ""]));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s1), "Stock");
+      const s2 = [["Date","Type","Item","Qty","Unit","Cost","Value","By","Note"]];
+      rows.slice().sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(m => {
+        const it = items.find(i => i.id === m.itemId);
+        const cost = Number(m.cost) || 0;
+        s2.push([m.date, MOVE_LABEL[m.type], it ? it.name : "-", Number(m.qty),
+          it ? it.unit : "", cost, Number(m.qty) * cost, m.by || "", m.note || ""]);
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s2), "Movements");
+      const s3 = [["Category","In Qty","In Value","Out Qty","Out Value"]];
+      Object.entries(sum.byCat).forEach(([c, v]) => s3.push([c, v.inQ, v.inV, v.outQ, v.outV]));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s3), "ByCategory");
+      const tag = mode === "day" ? day : mode === "month" ? mk : yr;
+      XLSX.writeFile(wb, `stock-${(shop && shop.id) || "shop"}-${tag}.xlsx`);
+    } catch (e) { alert("Export ไม่สำเร็จ: " + e.message); }
+  };
+
+  const months = useMemo(() => {
+    const r = []; const d = new Date();
+    for (let i = 0; i < 18; i++) { r.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); d.setMonth(d.getMonth()-1); }
+    return r;
+  }, []);
+  const years = useMemo(() => {
+    const y = new Date().getFullYear(); return [y, y-1, y-2].map(String);
+  }, []);
+
+  return (
+    <div style={{ padding:"14px 16px" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        {[["day","รายวัน"],["month","รายเดือน"],["year","รายปี"]].map(([k,t]) => (
+          <button key={k} className={"chip press " + (mode === k ? "on" : "")} style={{ flex:1, padding:"9px 0", textAlign:"center" }}
+            onClick={() => setMode(k)}>{t}</button>
+        ))}
+      </div>
+      <div style={{ marginBottom:12 }}>
+        {mode === "day"   && <input type="date" value={day} onChange={e => setDay(e.target.value)} />}
+        {mode === "month" && <select value={mk} onChange={e => setMk(e.target.value)}>
+          {months.map(m => <option key={m} value={m}>{THMON[+m.slice(5)-1]} {+m.slice(0,4)+543}</option>)}</select>}
+        {mode === "year"  && <select value={yr} onChange={e => setYr(e.target.value)}>
+          {years.map(y => <option key={y} value={y}>ปี {+y+543}</option>)}</select>}
+      </div>
+
+      {busy ? <div className="empty" style={{ padding:14 }}>กำลังรวมข้อมูล…</div> : null}
+
+      <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+        <StatCard label="รับเข้า" value={nf(sum.inQ)} sub={isOwner ? money(sum.inV) : ""} color="var(--green)" />
+        <StatCard label="เบิกออก" value={nf(sum.outQ)} sub={isOwner ? money(sum.outV) : ""} color="var(--red)" />
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        {isOwner ? <StatCard label="มูลค่าสต๊อกคงเหลือ" value={money(stockValue)} color="var(--gold)" /> : null}
+        <StatCard label="ต่ำกว่าเกณฑ์" value={lowItems.length} sub="รายการ" color={lowItems.length ? "var(--red)" : "var(--navy)"} />
+      </div>
+
+      <div className="card" style={{ padding:"6px 14px", marginBottom:14 }}>
+        <div style={{ fontWeight:600, padding:"8px 0 4px" }}>แยกตามหมวด</div>
+        {!Object.keys(sum.byCat).length ? <div className="empty" style={{ padding:16 }}>ไม่มีข้อมูล</div> : null}
+        {Object.entries(sum.byCat).sort((a,b) => b[1].outV - a[1].outV).map(([c, v]) => (
+          <div key={c} className="kv">
+            <span>{c}</span>
+            <span style={{ color:"var(--muted)", fontSize:13 }}>
+              <b style={{ color:"var(--green)" }}>+{nf(v.inQ)}</b> / <b style={{ color:"var(--red)" }}>−{nf(v.outQ)}</b>
+              {isOwner ? <span> · {money(v.outV)}</span> : null}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ padding:"6px 14px", marginBottom:14 }}>
+        <div style={{ fontWeight:600, padding:"8px 0 4px" }}>ของที่ใช้เยอะสุด</div>
+        {!topOut.length ? <div className="empty" style={{ padding:16 }}>ไม่มีข้อมูล</div> : null}
+        {topOut.map((r, n) => (
+          <div key={n} className="kv">
+            <span>{n + 1}. {r.it ? r.it.name : "(ลบแล้ว)"}</span>
+            <b>{nf(r.q)} {r.it ? r.it.unit : ""}</b>
+          </div>
+        ))}
+      </div>
+
+      <button className="btn gold press" style={{ width:"100%" }} onClick={exportXlsx}>📥 Export Excel</button>
+    </div>
+  );
+}
+
+/* ---------- TAB: ตั้งค่า ---------- */
+function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveItems, isOwner, cfg, setCfg, setSheet, say, loadSeed, exportJson, importJson }) {
+  const [newCat, setNewCat] = useState("");
+  const [newUnit, setNewUnit] = useState("");
+  const [pin, setPin] = useState(cfg.ownerPin);
+  const impRef = useRef(null);
+
+  if (!isOwner) return (
+    <div className="empty" style={{ paddingTop:60 }}>
+      🔒 หน้านี้สำหรับเจ้าของ<br />กดปุ่ม 👤 มุมขวาบนเพื่อใส่ PIN
+    </div>
+  );
+
+  const rmCat = c => {
+    const used = items.filter(i => i.cat === c).length;
+    if (used) { say(`ยังมี ${used} รายการใช้หมวดนี้`); return; }
+    saveItems(null, cats.filter(x => x !== c), null);
+  };
+
+  return (
+    <div style={{ padding:"14px 16px" }}>
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div className="row" style={{ marginBottom:10 }}>
+          <div style={{ fontWeight:600, flex:1 }}>🏪 ร้าน</div>
+          <button className="btn press" style={{ padding:"7px 13px", fontSize:13 }}
+            onClick={() => setSheet({ type:"shop", data:null })}>➕ เพิ่ม</button>
+        </div>
+        {shops.map(s => (
+          <div key={s.id} className="kv">
+            <span className="row">
+              {s.logo ? <img src={s.logo} alt="" style={{ width:28, height:28, borderRadius:8, objectFit:"cover" }} />
+                      : <span style={{ fontSize:19 }}>{s.emo || "🏪"}</span>}
+              <span>{s.name}</span>
+            </span>
+            <button className="chip press" onClick={() => setSheet({ type:"shop", data:s })}>แก้ไข</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div style={{ fontWeight:600, marginBottom:10 }}>🗂 หมวดหมู่ (ร้าน {shop ? shop.name : "-"})</div>
+        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:10 }}>
+          {cats.map(c => (
+            <span key={c} className="chip" style={{ display:"inline-flex", gap:6, alignItems:"center" }}>
+              {c}<button className="press" onClick={() => rmCat(c)} style={{ color:"var(--red)" }}>✕</button>
+            </span>
+          ))}
+        </div>
+        <div className="row">
+          <input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="เพิ่มหมวดใหม่" />
+          <button className="btn ghost press" onClick={() => {
+            const v = newCat.trim(); if (!v || cats.includes(v)) return;
+            saveItems(null, [...cats, v], null); setNewCat("");
+          }}>เพิ่ม</button>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div style={{ fontWeight:600, marginBottom:10 }}>📏 หน่วยนับ</div>
+        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:10 }}>
+          {units.map(u => (
+            <span key={u} className="chip" style={{ display:"inline-flex", gap:6, alignItems:"center" }}>
+              {u}<button className="press" onClick={() => saveItems(null, null, units.filter(x => x !== u))} style={{ color:"var(--red)" }}>✕</button>
+            </span>
+          ))}
+        </div>
+        <div className="row">
+          <input value={newUnit} onChange={e => setNewUnit(e.target.value)} placeholder="เพิ่มหน่วยใหม่" />
+          <button className="btn ghost press" onClick={() => {
+            const v = newUnit.trim(); if (!v || units.includes(v)) return;
+            saveItems(null, null, [...units, v]); setNewUnit("");
+          }}>เพิ่ม</button>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div style={{ fontWeight:600, marginBottom:10 }}>💾 ข้อมูล</div>
+        <div style={{ display:"grid", gap:8 }}>
+          <button className="btn ghost press" onClick={exportJson}>⬇️ สำรองรายการร้านนี้ (.json)</button>
+          <button className="btn ghost press" onClick={() => impRef.current && impRef.current.click()}>⬆️ นำเข้าไฟล์สำรอง</button>
+          <button className="btn gold press" onClick={loadSeed}>✨ โหลดข้อมูลตัวอย่าง</button>
+        </div>
+        <input ref={impRef} type="file" accept=".json,application/json" style={{ display:"none" }}
+          onChange={e => { const f = e.target.files && e.target.files[0]; if (f) importJson(f); e.target.value = ""; }} />
+        <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:8, lineHeight:1.6 }}>
+          สำรองไว้ก่อนแก้ข้อมูลชุดใหญ่ทุกครั้ง · ไฟล์สำรองเก็บเฉพาะรายการของ ไม่รวมประวัติรับ-เบิก
+        </div>
+      </div>
+
+      <div className="card" style={{ padding:14 }}>
+        <div style={{ fontWeight:600, marginBottom:10 }}>🔑 PIN เจ้าของ</div>
+        <div className="row">
+          <input value={pin} onChange={e => setPin(e.target.value)} inputMode="numeric" />
+          <button className="btn press" onClick={async () => {
+            const v = pin.trim(); if (v.length < 4) { say("อย่างน้อย 4 หลัก"); return; }
+            await setDoc("stockApp/config", { ownerPin: v }); setCfg({ ownerPin: v }); say("บันทึกแล้ว ✓");
+          }}>บันทึก</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Sheet: เพิ่ม/แก้ของ ---------- */
+function ItemSheet({ item, cats, units, isOwner, photo, onClose, onSave, onDelete }) {
+  const [f, setF] = useState(() => item ? { ...item } : {
+    id:uid(), name:"", cat:cats[0] || "", unit:units[0] || "ชิ้น",
+    qty:0, cost:0, min:0, exp:"", emo:"📦"
+  });
+  const [img, setImg] = useState(photo || null);
+  const [dirty, setDirty] = useState(false);
+  const fileRef = useRef(null);
+
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const pick = async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const d = await compressImg(file, 200, 0.55);
+    setImg(d); setDirty(true);
+  };
+
+  return (
+    <Sheet title={item ? "แก้ไขรายการ" : "เพิ่มรายการ"} onClose={onClose}>
+      <div className="row" style={{ marginBottom:14 }}>
+        <div className="press" onClick={() => fileRef.current && fileRef.current.click()}
+          style={{ width:74, height:74, borderRadius:16, background:"var(--tint)", display:"flex",
+            alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:26, flex:"none" }}>
+          {img ? <img src={img} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "📷"}
+        </div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:12.5, color:"var(--muted)" }}>แตะเพื่อใส่รูปสินค้า</div>
+          {img ? <button className="chip press" style={{ marginTop:6, color:"var(--red)" }}
+            onClick={() => { setImg(null); setDirty(true); }}>ลบรูป</button> : null}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display:"none" }} />
+      </div>
+
+      <Field label="ชื่อของ"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น น้ำยาซักผ้า 20 ลิตร" /></Field>
+      <div className="row" style={{ gap:8 }}>
+        <div style={{ flex:1 }}><Field label="หมวด">
+          <select value={f.cat} onChange={e => set("cat", e.target.value)}>
+            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+          </select></Field></div>
+        <div style={{ flex:1 }}><Field label="หน่วย">
+          <select value={f.unit} onChange={e => set("unit", e.target.value)}>
+            {units.map(u => <option key={u} value={u}>{u}</option>)}
+          </select></Field></div>
+      </div>
+      <div className="row" style={{ gap:8 }}>
+        <div style={{ flex:1 }}><Field label="ยอดคงเหลือ">
+          <input type="number" inputMode="decimal" value={f.qty} onChange={e => set("qty", e.target.value)} /></Field></div>
+        <div style={{ flex:1 }}><Field label="จุดสั่งซื้อ (ต่ำกว่านี้ = 🔴)">
+          <input type="number" inputMode="decimal" value={f.min} onChange={e => set("min", e.target.value)} /></Field></div>
+      </div>
+      <div className="row" style={{ gap:8 }}>
+        <div style={{ flex:1 }}><Field label="ราคาทุน / หน่วย">
+          <input type="number" inputMode="decimal" value={f.cost} onChange={e => set("cost", e.target.value)} /></Field></div>
+        <div style={{ flex:1 }}><Field label="วันหมดอายุ (ถ้ามี)">
+          <input type="date" value={f.exp || ""} onChange={e => set("exp", e.target.value)} /></Field></div>
+      </div>
+
+      <div className="row" style={{ gap:8, marginTop:6 }}>
+        {item && isOwner ? <button className="btn danger press" onClick={() => onDelete(item)}>ลบ</button> : null}
+        <button className="btn press" style={{ flex:1 }} onClick={() => {
+          if (!f.name.trim()) { alert("ใส่ชื่อของก่อน"); return; }
+          onSave({ ...f, name:f.name.trim(), qty:Number(f.qty)||0, cost:Number(f.cost)||0, min:Number(f.min)||0 },
+            dirty ? img : undefined);
+        }}>บันทึก</button>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ---------- Sheet: รับ-เบิกเร็ว ---------- */
+function QuickMove({ item, onClose, onSave }) {
+  const [type, setType] = useState("out");
+  const [qty, setQty] = useState("1");
+  const [note, setNote] = useState("");
+  const [by, setBy] = useState(LS.get("ps_by") || "");
+
+  const go = () => {
+    const n = Number(qty);
+    if (!n || n <= 0) { alert("ใส่จำนวนให้ถูกต้อง"); return; }
+    LS.set("ps_by", by);
+    onSave({ id:uid(), ts:Date.now(), date:today(), itemId:item.id, type, qty:n,
+      cost:Number(item.cost) || 0, note:note.trim(), by:by.trim() });
+  };
+
+  return (
+    <Sheet title={item.name} onClose={onClose}>
+      <div style={{ textAlign:"center", marginBottom:14 }}>
+        <div className="lbl">คงเหลือปัจจุบัน</div>
+        <div style={{ fontSize:34, fontWeight:600, color:"var(--navy)" }}>{nf(item.qty)} <span style={{ fontSize:16, color:"var(--muted)" }}>{item.unit}</span></div>
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        {["in","out","adj"].map(t => (
+          <button key={t} className="press" onClick={() => setType(t)}
+            style={{ flex:1, padding:"11px 0", borderRadius:12, fontWeight:500,
+              background: type === t ? MOVE_COLOR[t] : "var(--tint)", color: type === t ? "#fff" : "var(--muted)" }}>
+            {t === "in" ? "＋ รับเข้า" : t === "out" ? "－ เบิกออก" : "⇄ ปรับยอด"}
+          </button>
+        ))}
+      </div>
+      <Field label={type === "adj" ? "ยอดจริง" : "จำนวน"}>
+        <div className="row">
+          <button className="btn ghost press" style={{ width:52 }} onClick={() => setQty(String(Math.max(0,(Number(qty)||0)-1)))}>−</button>
+          <input type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)}
+            style={{ textAlign:"center", fontSize:22, fontWeight:600 }} />
+          <button className="btn ghost press" style={{ width:52 }} onClick={() => setQty(String((Number(qty)||0)+1))}>＋</button>
+        </div>
+      </Field>
+      <div className="row" style={{ gap:8 }}>
+        <div style={{ flex:1.4 }}><Field label="หมายเหตุ"><input value={note} onChange={e => setNote(e.target.value)} /></Field></div>
+        <div style={{ flex:1 }}><Field label="ผู้บันทึก"><input value={by} onChange={e => setBy(e.target.value)} /></Field></div>
+      </div>
+      <button className="btn press" style={{ width:"100%" }} onClick={go}>บันทึก</button>
+    </Sheet>
+  );
+}
+
+/* ---------- Sheet: ร้าน ---------- */
+function ShopSheet({ shop, onClose, onSave, onDelete }) {
+  const [f, setF] = useState(() => shop ? { ...shop } : { id:"", name:"", emo:"🏪", logo:"" });
+  const fileRef = useRef(null);
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const pick = async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    set("logo", await compressImg(file, 220, 0.6));
+  };
+
+  return (
+    <Sheet title={shop ? "แก้ไขร้าน" : "เพิ่มร้าน"} onClose={onClose}>
+      <div className="row" style={{ marginBottom:14 }}>
+        <div className="press" onClick={() => fileRef.current && fileRef.current.click()}
+          style={{ width:74, height:74, borderRadius:18, background:"var(--tint)", display:"flex",
+            alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:30, flex:"none" }}>
+          {f.logo ? <img src={f.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : f.emo}
+        </div>
+        <div style={{ flex:1, fontSize:12.5, color:"var(--muted)" }}>แตะเพื่อใส่โลโก้ร้าน</div>
+        <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display:"none" }} />
+      </div>
+
+      <Field label="ชื่อร้าน"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น Teddy สาขา 2" /></Field>
+      <Field label="รหัสร้าน (อังกฤษ ห้ามซ้ำ ห้ามแก้ทีหลัง)">
+        <input value={f.id} disabled={!!shop} onChange={e => set("id", e.target.value.replace(/[^a-z0-9_]/g, ""))}
+          placeholder="teddy2" />
+      </Field>
+      <Field label="ไอคอน">
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          {["🏪","🧺","🪷","🧋","☕","🧼","💧","🛒"].map(e => (
+            <button key={e} className={"chip press " + (f.emo === e && !f.logo ? "on" : "")}
+              onClick={() => { set("emo", e); set("logo", ""); }} style={{ fontSize:18 }}>{e}</button>
+          ))}
+        </div>
+      </Field>
+
+      <div className="row" style={{ gap:8, marginTop:8 }}>
+        {shop ? <button className="btn danger press" onClick={() => onDelete(shop)}>ลบ</button> : null}
+        <button className="btn press" style={{ flex:1 }} onClick={() => {
+          const id = (f.id || "").trim(), name = (f.name || "").trim();
+          if (!id || !name) { alert("ใส่ชื่อร้านและรหัสร้าน"); return; }
+          onSave({ ...f, id, name });
+        }}>บันทึก</button>
+      </div>
+    </Sheet>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
+</script>
+</body>
+</html>
