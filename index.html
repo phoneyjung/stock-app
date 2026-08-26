@@ -328,7 +328,7 @@ function buildText(kind, shopName, head, groups, footer) {
   return t;
 }
 
-function renderImage(opts) {
+async function renderImage(opts) {
   const W = 760, P = 34;
   const c = document.createElement("canvas");
   const ctx = c.getContext("2d");
@@ -347,6 +347,20 @@ function renderImage(opts) {
   ctx.globalAlpha = .85;
   ctx.fillText(opts.head, P, 82);
   ctx.globalAlpha = 1;
+
+  if (opts.logo) {
+    try {
+      const im = await new Promise((res, rej) => {
+        const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = opts.logo;
+      });
+      const D = 72, X = W - P - D, Y = 18;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(X + D/2, Y + D/2, D/2, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+      ctx.fillStyle = "#fff"; ctx.fillRect(X, Y, D, D);
+      ctx.drawImage(im, X, Y, D, D);
+      ctx.restore();
+    } catch (e) {}
+  }
 
   let y = 152;
   opts.groups.forEach(g => {
@@ -460,6 +474,7 @@ function App() {
   const [cats, setCats] = useState(DEFAULT_CATS);
   const [units, setUnits] = useState(DEFAULT_UNITS);
   const [photos, setPhotos] = useState({});
+  const [logos, setLogos] = useState({});
   const [counts, setCounts] = useState({});   // { "YYYY-MM": [session,...] }
   const [orders, setOrders] = useState({});
   const [loadingShop, setLoadingShop] = useState(false);
@@ -487,8 +502,9 @@ function App() {
   useEffect(() => {
     const u1 = watchDoc("stockApp/shops", d => { setShops((d && d.list) || []); setOnline(true); setBooting(false); });
     const u2 = watchDoc("stockApp/config", d => { if (d) setCfg({ ownerPin: d.ownerPin || "1234" }); });
+    const u3 = watchDoc("stockApp/logos", d => setLogos((d && d.l) || {}));
     const t = setTimeout(() => setBooting(false), 6000);
-    return () => { u1(); u2(); clearTimeout(t); };
+    return () => { u1(); u2(); u3(); clearTimeout(t); };
   }, []);
 
   useEffect(() => {
@@ -567,6 +583,14 @@ function App() {
     });
   };
   const saveShops = async list => { setShops(list); await txDoc("stockApp/shops", () => ({ list })); };
+  const saveLogo = async (sid, dataUrl) => {
+    setLogos(p => { const n = { ...p }; if (dataUrl) n[sid] = dataUrl; else delete n[sid]; return n; });
+    await txDoc("stockApp/logos", cur => {
+      const l = { ...(cur.l || {}) };
+      if (dataUrl) l[sid] = dataUrl; else delete l[sid];
+      return { l };
+    });
+  };
 
   const saveCount = async session => {
     const mk = monthOf(session.date);
@@ -741,7 +765,7 @@ function App() {
 
   return (
     <div style={{ paddingBottom:80 }}>
-      <Header shop={shop} shops={shops} setShopId={setShopId} isOwner={isOwner} onRole={askOwner}
+      <Header shop={shop} shops={shops} logos={logos} setShopId={setShopId} isOwner={isOwner} onRole={askOwner}
         onHelp={() => setSheet({ type:"help" })} onUndo={undoLast} undoCount={undoStack.length}
         items={items.length} low={lowItems.length} lastDate={latest.last ? latest.last.date : null} />
 
@@ -777,10 +801,10 @@ function App() {
       ) : (
         <>
           {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, say }} />}
-          {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, saveCount, say, setTab }} />}
-          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, saveOrder, say }} />}
-          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, loadMonth, delRecord, isOwner, say }} />}
-          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, exportJson, importJson }} />}
+          {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logos[shopId], saveCount, say, setTab }} />}
+          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo:logos[shopId], saveOrder, say }} />}
+          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logos[shopId], loadMonth, delRecord, isOwner, say }} />}
+          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, items, photos, logos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, exportJson, importJson }} />}
         </>
       )}
 
@@ -822,10 +846,12 @@ function App() {
           onOrder={() => { addToOrder(sheet.data.id); setSheet(null); }} />}
 
       {sheet && sheet.type === "shop" &&
-        <ShopSheet shop={sheet.data} shops={shops} onClose={() => setSheet(null)}
-          onSave={async sh => {
+        <ShopSheet shop={sheet.data} shops={shops} logo={sheet.data ? logos[sheet.data.id] : null}
+          onClose={() => setSheet(null)}
+          onSave={async (sh, logoImg) => {
             const exists = shops.some(x => x.id === sh.id);
             await saveShops(exists ? shops.map(x => x.id === sh.id ? sh : x) : [...shops, sh]);
+            if (logoImg !== undefined) await saveLogo(sh.id, logoImg);
             if (!exists) setShopId(sh.id);
             setSheet(null); say("บันทึกแล้ว ✓");
           }}
@@ -848,14 +874,20 @@ function App() {
 }
 
 /* ---------- Header ---------- */
-function Header({ shop, shops, setShopId, isOwner, onRole, onHelp, onUndo, undoCount, items, low, lastDate }) {
+function Header({ shop, shops, logos, setShopId, isOwner, onRole, onHelp, onUndo, undoCount, items, low, lastDate }) {
   return (
     <div className="hdr">
       <div className="row" style={{ gap:6 }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:11, opacity:.72, letterSpacing:1 }}>PLP STOCK</div>
-          <div style={{ fontSize:19, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-            {shop ? `${shop.emo || "🏪"} ${shop.name}` : "เช็คสต๊อก"}
+          <div className="row" style={{ gap:8 }}>
+            {shop && logos[shop.id]
+              ? <img src={logos[shop.id]} alt=""
+                  style={{ width:30, height:30, borderRadius:999, objectFit:"cover", flex:"none", background:"#fff" }} />
+              : <span style={{ fontSize:19 }}>{shop ? (shop.emo || "🏪") : "🏪"}</span>}
+            <div style={{ fontSize:19, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {shop ? shop.name : "เช็คสต๊อก"}
+            </div>
           </div>
         </div>
         <button className="press" onClick={onHelp}
@@ -881,7 +913,10 @@ function Header({ shop, shops, setShopId, isOwner, onRole, onHelp, onUndo, undoC
                   background: on ? "#fff" : "rgba(255,255,255,.14)", color: on ? colorOf(s.color).head : "#fff",
                   fontWeight: on ? 500 : 400, fontSize:13, whiteSpace:"nowrap", flex:"none",
                   border: on ? "none" : "1px solid rgba(255,255,255,.25)" }}>
-                <span>{s.emo || "🏪"}</span>{s.name}
+                {logos[s.id]
+                  ? <img src={logos[s.id]} alt="" style={{ width:20, height:20, borderRadius:999, objectFit:"cover", background:"#fff" }} />
+                  : <span>{s.emo || "🏪"}</span>}
+                {s.name}
               </button>
             );
           })}
@@ -1138,7 +1173,7 @@ function ItemSheet({ item, cats, units, isOwner, photo, onClose, onSave, onDelet
 }
 
 /* ---------- TAB 2: นับสต๊อก ---------- */
-function TabCount({ items, cats, photos, latest, shop, saveCount, say, setTab }) {
+function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say, setTab }) {
   const [vals, setVals] = useState({});
   const [by, setBy] = useState(LS.get("ps_by") || "");
   const [date, setDate] = useState(today());
@@ -1165,7 +1200,7 @@ function TabCount({ items, cats, photos, latest, shop, saveCount, say, setTab })
     setDone(session); setVals({}); setNote("");
   };
 
-  if (done) return <CountDone session={done} items={items} shop={shop} say={say}
+  if (done) return <CountDone session={done} items={items} shop={shop} shopLogo={shopLogo} say={say}
     onNew={() => setDone(null)} onGoOrder={() => { setDone(null); setTab("order"); }} />;
 
   return (
@@ -1238,7 +1273,7 @@ function countGroups(session, items) {
   return Object.entries(byCat).map(([title, lines]) => ({ title, lines }));
 }
 
-function CountDone({ session, items, shop, say, onNew, onGoOrder }) {
+function CountDone({ session, items, shop, shopLogo, say, onNew, onGoOrder }) {
   const groups = countGroups(session, items);
   const lowN = groups.reduce((s, g) => s + g.lines.filter(l => l.flag).length, 0);
   const head = `${thDate(session.date)}${session.by ? " · ผู้นับ: " + session.by : ""}${session.note ? " · " + session.note : ""}`;
@@ -1260,9 +1295,9 @@ function CountDone({ session, items, shop, say, onNew, onGoOrder }) {
           buildText("📋 นับสต๊อก", shop ? shop.name : "", head, groups, footer), say)}>
           📋 คัดลอกเป็นข้อความ
         </button>
-        <button className="btn gold press" onClick={() => shareCanvas(
-          renderImage({ title:"นับสต๊อก · " + (shop ? shop.name : ""), head, groups, footer,
-            color: colorOf(shop && shop.color).head }),
+        <button className="btn gold press" onClick={async () => shareCanvas(
+          await renderImage({ title:"นับสต๊อก · " + (shop ? shop.name : ""), head, groups, footer,
+            color: colorOf(shop && shop.color).head, logo: shopLogo }),
           `count-${session.date}.png`, say)}>
           🖼 ส่งเป็นรูปภาพ
         </button>
@@ -1288,7 +1323,7 @@ function CountDone({ session, items, shop, say, onNew, onGoOrder }) {
 }
 
 /* ---------- TAB 3: สั่งของ ---------- */
-function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, saveOrder, say }) {
+function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo, saveOrder, say }) {
   const [by, setBy] = useState(LS.get("ps_by") || "");
   const [note, setNote] = useState("");
   const [pick, setPick] = useState(false);
@@ -1421,9 +1456,9 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, sa
             buildText("🛒 รายการสั่งซื้อ", shop ? shop.name : "", head, groups, footer), say)}>
             📋 คัดลอกเป็นข้อความ
           </button>
-          <button className="btn gold press" onClick={() => shareCanvas(
-            renderImage({ title:"รายการสั่งซื้อ · " + (shop ? shop.name : ""), head, groups, footer,
-              color: colorOf(shop && shop.color).head }), `order-${today()}.png`, say)}>
+          <button className="btn gold press" onClick={async () => shareCanvas(
+            await renderImage({ title:"รายการสั่งซื้อ · " + (shop ? shop.name : ""), head, groups, footer,
+              color: colorOf(shop && shop.color).head, logo: shopLogo }), `order-${today()}.png`, say)}>
             🖼 ส่งเป็นรูปภาพ
           </button>
           <button className="btn ghost press" onClick={save}>💾 บันทึกใบสั่งของ</button>
@@ -1434,7 +1469,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, sa
 }
 
 /* ---------- TAB 4: ประวัติ ---------- */
-function TabHist({ counts, orders, items, shop, loadMonth, delRecord, isOwner, say }) {
+function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, isOwner, say }) {
   const [kind, setKind] = useState("count");
   const [mk, setMk] = useState(monthOf(today()));
   const [openId, setOpenId] = useState("");
@@ -1496,9 +1531,9 @@ function TabHist({ counts, orders, items, shop, loadMonth, delRecord, isOwner, s
                       buildText(kind === "count" ? "📋 นับสต๊อก" : "🛒 รายการสั่งซื้อ", shop ? shop.name : "", head, groups, footer), say)}>
                       📋 คัดลอกข้อความ
                     </button>
-                    <button className="btn ghost press" onClick={() => shareCanvas(
-                      renderImage({ title:(kind === "count" ? "นับสต๊อก · " : "รายการสั่งซื้อ · ") + (shop ? shop.name : ""),
-                        head, groups, footer, color: colorOf(shop && shop.color).head }),
+                    <button className="btn ghost press" onClick={async () => shareCanvas(
+                      await renderImage({ title:(kind === "count" ? "นับสต๊อก · " : "รายการสั่งซื้อ · ") + (shop ? shop.name : ""),
+                        head, groups, footer, color: colorOf(shop && shop.color).head, logo: shopLogo }),
                       `${kind}-${r.date}.png`, say)}>
                       🖼 ส่งเป็นรูปภาพ
                     </button>
@@ -1531,7 +1566,7 @@ function orderGroups(order, items) {
 
 /* ---------- TAB 5: ตั้งค่า ---------- */
 function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta,
-                    isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, exportJson, importJson }) {
+                    logos, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, exportJson, importJson }) {
   const [newCat, setNewCat] = useState("");
   const [newUnit, setNewUnit] = useState("");
   const [pin, setPin] = useState(cfg.ownerPin);
@@ -1563,8 +1598,10 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photo
         {shops.map(s => (
           <div key={s.id} className="kv">
             <span className="row">
-              <span style={{ width:18, height:18, borderRadius:6, background:colorOf(s.color).head, flex:"none" }}></span>
-              <span style={{ fontSize:19 }}>{s.emo || "🏪"}</span>
+              <span style={{ width:14, height:14, borderRadius:5, background:colorOf(s.color).head, flex:"none" }}></span>
+              {logos[s.id]
+                ? <img src={logos[s.id]} alt="" style={{ width:28, height:28, borderRadius:999, objectFit:"cover" }} />
+                : <span style={{ fontSize:19 }}>{s.emo || "🏪"}</span>}
               <span>{s.name}</span>
             </span>
             <button className="chip press" onClick={() => setSheet({ type:"shop", data:s })}>แก้ไข</button>
@@ -1655,9 +1692,17 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photo
 }
 
 /* ---------- Sheet: ร้าน ---------- */
-function ShopSheet({ shop, shops, onClose, onSave, onDelete }) {
+function ShopSheet({ shop, shops, logo, onClose, onSave, onDelete }) {
   const [f, setF] = useState(() => shop ? { ...shop } : { id:"", name:"", emo:"🏪", color:"", bg:"none" });
+  const [img, setImg] = useState(logo || null);
+  const [dirty, setDirty] = useState(false);
+  const fileRef = useRef(null);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const pickLogo = async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setImg(await compressImg(file, 240, 0.85)); setDirty(true);
+  };
   const usedColors = shops.filter(s => !shop || s.id !== shop.id).map(s => s.color);
   const free = PALETTE.filter(c => !usedColors.includes(c.k));
 
@@ -1665,11 +1710,27 @@ function ShopSheet({ shop, shops, onClose, onSave, onDelete }) {
 
   return (
     <Sheet title={shop ? "แก้ไขร้าน" : "เพิ่มร้าน"} onClose={onClose}>
+      <div className="row" style={{ marginBottom:14 }}>
+        <div className="press" onClick={() => fileRef.current && fileRef.current.click()}
+          style={{ width:78, height:78, borderRadius:999, background:"var(--soft)", display:"flex",
+            alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:28, flex:"none",
+            border:"2px solid var(--line)" }}>
+          {img ? <img src={img} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : f.emo}
+        </div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:12.5, color:"var(--muted)" }}>แตะเพื่อใส่โลโก้ร้าน</div>
+          <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>รูปจะถูกตัดเป็นวงกลม</div>
+          {img ? <button className="chip press" style={{ marginTop:6, color:"var(--red)" }}
+            onClick={() => { setImg(null); setDirty(true); }}>ลบโลโก้</button> : null}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" onChange={pickLogo} style={{ display:"none" }} />
+      </div>
+
       <Field label="ชื่อร้าน"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น Teddy สาขา 2" /></Field>
       <Field label="รหัสร้าน" hint={shop ? "แก้ไม่ได้" : "อังกฤษ ห้ามซ้ำ"}>
         <input value={f.id} disabled={!!shop} onChange={e => set("id", e.target.value.replace(/[^a-z0-9_]/g, ""))} placeholder="teddy2" />
       </Field>
-      <Field label="ไอคอน">
+      <Field label="ไอคอนสำรอง" hint="ใช้เมื่อไม่ได้ใส่โลโก้">
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {["🏪","🧺","🪷","🧋","☕","🧼","💧","🛒","🍜","💈"].map(e => (
             <button key={e} className={"chip press " + (f.emo === e ? "on" : "")}
@@ -1718,7 +1779,7 @@ function ShopSheet({ shop, shops, onClose, onSave, onDelete }) {
           const id = (f.id || "").trim(), name = (f.name || "").trim();
           if (!id || !name) { alert("ใส่ชื่อร้านและรหัสร้าน"); return; }
           if (!f.color) { alert("เลือกสีประจำร้าน"); return; }
-          onSave({ ...f, id, name });
+          onSave({ ...f, id, name }, dirty ? img : undefined);
         }}>บันทึก</button>
       </div>
     </Sheet>
