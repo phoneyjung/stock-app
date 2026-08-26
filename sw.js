@@ -1,18 +1,29 @@
-const CACHE = 'plp-stock-v8';
-const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './bg-pattern.png', './hdr-banner.jpg', './empty-box.jpg'];
+const CACHE = 'plp-stock-v10';
+const CORE = ['./', './index.html', './manifest.json', './firebase-config.js', './icon-192.png'];
+
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {}))))
+      .then(() => self.skipWaiting())
+  );
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(
+    caches.keys()
+      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (u.origin !== location.origin) return;
-  e.respondWith(fetch(e.request).then(r => {
-    const cp = r.clone();
-    caches.open(CACHE).then(c => c.put(e.request, cp));
-    return r;
-  }).catch(() => caches.match(e.request)));
+  e.respondWith(
+    fetch(e.request).then(r => {
+      const cp = r.clone();
+      caches.open(CACHE).then(c => c.put(e.request, cp));
+      return r;
+    }).catch(() => caches.match(e.request).then(m => m || caches.match('./index.html')))
+  );
 });

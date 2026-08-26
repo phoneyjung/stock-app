@@ -4,9 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#113D6C">
-<title>PLP Stock — เช็คสต๊อก</title>
+<title>Stock PLP — เช็คสต๊อก</title>
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock PLP">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="เช็คสต๊อก นับของ และทำใบสั่งซื้อ สำหรับร้านสาขาต่างๆ">
+<script>
+window.__pwaPrompt = null;
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault();
+  window.__pwaPrompt = e;
+  window.dispatchEvent(new Event("pwa-installable"));
+});
+window.addEventListener("appinstalled", function () {
+  window.__pwaPrompt = null;
+  window.dispatchEvent(new Event("pwa-installed"));
+});
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -85,7 +103,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 
 <script type="text/babel" data-presets="react">
 /* ============================================================
-   PLP STOCK  ·  แอปเช็คสต๊อกหลายร้าน
+   STOCK PLP  ·  แอปเช็คสต๊อกหลายร้าน
    ค่า Firebase อยู่ในไฟล์ firebase-config.js (แยกไว้ต่างหาก)
    >> ห้ามใส่ค่า Firebase ในไฟล์นี้ <<
    อัปเดตแอป = ทับเฉพาะ index.html ค่า config จะไม่หาย
@@ -484,7 +502,12 @@ function App() {
   const [shopId, setShopId] = useState(LS.get("ps_shop") || "");
   const [role, setRole] = useState(LS.get("ps_role") || "staff");
   const [cfg, setCfg] = useState({ ownerPin:"1234" });
-  const [tab, setTab] = useState("stock");
+  const [tab, setTab] = useState(() => {
+    const t = new URLSearchParams(location.search).get("tab");
+    return ["stock","count","order","hist","setup"].includes(t) ? t : "stock";
+  });
+  const [canInstall, setCanInstall] = useState(!!window.__pwaPrompt);
+  const [hideInstall, setHideInstall] = useState(LS.get("ps_hideinstall") === "1");
 
   const [items, setItems] = useState([]);
   const [cats, setCats] = useState(DEFAULT_CATS);
@@ -513,6 +536,27 @@ function App() {
     const m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", c.head);
   }, [shop]);
+
+  /* ---- ปุ่มติดตั้งแอป ---- */
+  useEffect(() => {
+    const on = () => setCanInstall(true);
+    const off = () => { setCanInstall(false); setHideInstall(true); };
+    window.addEventListener("pwa-installable", on);
+    window.addEventListener("pwa-installed", off);
+    return () => { window.removeEventListener("pwa-installable", on); window.removeEventListener("pwa-installed", off); };
+  }, []);
+
+  const installApp = async () => {
+    const p = window.__pwaPrompt;
+    if (!p) {
+      alert("ติดตั้งเองได้เลย:\n\nAndroid Chrome → เมนู ⋮ → เพิ่มลงในหน้าจอหลัก\niPhone Safari → ปุ่มแชร์ ↑ → Add to Home Screen");
+      return;
+    }
+    p.prompt();
+    await p.userChoice;
+    window.__pwaPrompt = null;
+    setCanInstall(false);
+  };
 
   /* ---- boot ---- */
   useEffect(() => {
@@ -785,7 +829,13 @@ function App() {
     say("ใส่ในรายการสั่งของแล้ว");
   };
 
-  if (booting) return <div className="empty" style={{ paddingTop:120 }}>กำลังโหลด…</div>;
+  if (booting) return (
+    <div style={{ minHeight:"70vh", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center", gap:14, padding:24 }}>
+      <img src="logo-wordmark.png" alt="Stock PLP" style={{ width:"78%", maxWidth:300 }} />
+      <div style={{ color:"var(--muted)", fontSize:13 }}>กำลังโหลด…</div>
+    </div>
+  );
 
   const TABS = [
     { k:"stock",  ic:"📦", t:"รายการของ" },
@@ -816,6 +866,19 @@ function App() {
           สาเหตุ: ยังไม่พบไฟล์ <b>firebase-config.js</b> หรือยังไม่ได้ใส่ค่าในไฟล์นั้น
         </div>
       )}
+
+      {canInstall && !hideInstall ? (
+        <div className="card" style={{ margin:"10px 16px 0", padding:"10px 12px", display:"flex", gap:10, alignItems:"center" }}>
+          <span style={{ fontSize:20 }}>📲</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13.5, fontWeight:500 }}>ติดตั้งลงหน้าจอหลัก</div>
+            <div style={{ fontSize:11.5, color:"var(--muted)" }}>เปิดเร็วขึ้น เต็มจอ ไม่มีแถบเบราว์เซอร์</div>
+          </div>
+          <button className="btn press" style={{ padding:"8px 14px", fontSize:13 }} onClick={installApp}>ติดตั้ง</button>
+          <button className="press" onClick={() => { setHideInstall(true); LS.set("ps_hideinstall","1"); }}
+            style={{ width:28, height:28, borderRadius:999, background:"var(--soft)", fontSize:12 }}>✕</button>
+        </div>
+      ) : null}
 
       {loadingShop ? <div className="empty">กำลังโหลด…</div> : null}
 
@@ -894,7 +957,7 @@ function App() {
             await saveShops(next); setShopId(next.length ? next[0].id : ""); setSheet(null);
           }} />}
 
-      {sheet && sheet.type === "help" && <HelpSheet isOwner={isOwner} onClose={() => setSheet(null)} />}
+      {sheet && sheet.type === "help" && <HelpSheet isOwner={isOwner} onInstall={installApp} onClose={() => setSheet(null)} />}
 
       {toast ? (
         <div style={{ position:"fixed", bottom:94, left:0, right:0, display:"flex", justifyContent:"center", zIndex:70 }}>
@@ -912,7 +975,7 @@ function Header({ shop, shops, logos, setShopId, isOwner, onRole, onHelp, onUndo
     <div className="hdr">
       <div className="row" style={{ gap:6 }}>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:11, opacity:.72, letterSpacing:1 }}>PLP STOCK</div>
+          <div style={{ fontSize:11, opacity:.72, letterSpacing:1 }}>STOCK PLP</div>
           <div className="row" style={{ gap:8 }}>
             {shop && logoOf(logos, shop.id)
               ? <img src={logoOf(logos, shop.id)} alt=""
@@ -1823,7 +1886,7 @@ function ShopSheet({ shop, shops, logo, onClose, onSave, onDelete }) {
 }
 
 /* ---------- Sheet: วิธีใช้ ---------- */
-function HelpSheet({ onClose, isOwner }) {
+function HelpSheet({ onClose, isOwner, onInstall }) {
   const [open, setOpen] = useState("start");
   const SEC = [
     { k:"start", t:"🚀 ใช้ยังไง (อ่านอันนี้ก่อน)", body:[
@@ -1894,6 +1957,9 @@ function HelpSheet({ onClose, isOwner }) {
           </div>
         ))}
       </div>
+      <button className="btn ghost press" style={{ width:"100%", marginTop:12 }} onClick={onInstall}>
+        📲 ติดตั้งลงหน้าจอหลัก
+      </button>
       <div style={{ fontSize:12, color:"var(--muted)", textAlign:"center", marginTop:16, lineHeight:1.7 }}>
         {isOwner ? "👑 ตอนนี้อยู่ในโหมดเจ้าของ" : "👤 ตอนนี้อยู่ในโหมดพนักงาน"}<br/>
         ข้อมูลซิงก์อัตโนมัติทุกเครื่องที่เปิดลิงก์เดียวกัน
