@@ -512,6 +512,7 @@ function App() {
   const [items, setItems] = useState([]);
   const [cats, setCats] = useState(DEFAULT_CATS);
   const [units, setUnits] = useState(DEFAULT_UNITS);
+  const [vendors, setVendors] = useState([]);
   const [photos, setPhotos] = useState({});
   const [logos, setLogos] = useState({});
   const [counts, setCounts] = useState({});   // { "YYYY-MM": [session,...] }
@@ -581,6 +582,7 @@ function App() {
       setItems((d && d.items) || []);
       setCats((d && d.cats && d.cats.length) ? d.cats : DEFAULT_CATS);
       setUnits((d && d.units && d.units.length) ? d.units : DEFAULT_UNITS);
+      setVendors((d && d.vendors) || []);
       setLoadingShop(false);
     });
     const u2 = watchDoc("stockPhotos/" + shopId, d => setPhotos((d && d.p) || {}));
@@ -610,12 +612,15 @@ function App() {
   }, [shopId]);
 
   /* ---- writers ---- */
-  const saveMeta = async (nextCats, nextUnits) => {
+  const saveMeta = async (nextCats, nextUnits, nextVendors) => {
     if (nextCats) setCats(nextCats);
     if (nextUnits) setUnits(nextUnits);
+    if (nextVendors) setVendors(nextVendors);
     await txDoc("stockItems/" + shopId, cur => ({
       ...cur, items: cur.items || items,
-      cats: nextCats || cur.cats || cats, units: nextUnits || cur.units || units
+      cats: nextCats || cur.cats || cats,
+      units: nextUnits || cur.units || units,
+      vendors: nextVendors || cur.vendors || vendors
     }));
   };
   const upsertItem = async (it, undoLabel) => {
@@ -787,7 +792,7 @@ function App() {
   };
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, items }, null, 1)], { type:"application/json" });
+    const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, vendors, items }, null, 1)], { type:"application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = `stock-${shopId}-${today()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
@@ -800,12 +805,18 @@ function App() {
         if (!Array.isArray(d.items)) throw new Error("ไฟล์ไม่ถูกต้อง");
         if (!confirm(`นำเข้า ${d.items.length} รายการ ทับข้อมูลร้านนี้?`)) return;
         setItems(d.items);
-        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items:d.items, cats:d.cats || cats, units:d.units || units }));
+        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items:d.items, cats:d.cats || cats, units:d.units || units, vendors:d.vendors || vendors }));
         say("นำเข้าแล้ว ✓");
       } catch (e) { alert("นำเข้าไม่สำเร็จ: " + e.message); }
     };
     fr.readAsText(file);
   };
+
+  const vendorList = useMemo(() => {
+    const set = new Set(vendors.filter(Boolean));
+    items.forEach(i => { if (i.vendor) set.add(i.vendor); });
+    return [...set].sort((a, b) => a.localeCompare(b, "th"));
+  }, [vendors, items]);
 
   /* ---- ยอดล่าสุดจากการนับ ---- */
   const latest = useMemo(() => {
@@ -900,7 +911,7 @@ function App() {
           {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab }} />}
           {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo:logoOf(logos, shopId), saveOrder, say }} />}
           {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, isOwner, say }} />}
-          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, items, photos, logos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
+          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, items, photos, logos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
         </>
       )}
 
@@ -921,10 +932,11 @@ function App() {
       </div>
 
       {sheet && sheet.type === "item" &&
-        <ItemSheet item={sheet.data} cats={cats} units={units} items={items} isOwner={isOwner}
+        <ItemSheet item={sheet.data} cats={cats} units={units} vendors={vendorList} items={items} isOwner={isOwner}
           photo={sheet.data ? photos[sheet.data.id] : null} onClose={() => setSheet(null)}
           onSave={async (it, img) => {
             await upsertItem(it, (items.some(x => x.id === it.id) ? "แก้ไข " : "เพิ่ม ") + it.name);
+            if (it.vendor && !vendors.includes(it.vendor)) await saveMeta(null, null, [...vendors, it.vendor]);
             if (img !== undefined) await savePhoto(it.id, img);
             setSheet(null); say("บันทึกแล้ว ✓");
           }}
@@ -1192,7 +1204,7 @@ function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
 }
 
 /* ---------- เพิ่ม/แก้ไขรายการ ---------- */
-function ItemSheet({ item, cats, units, isOwner, photo, onClose, onSave, onDelete }) {
+function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave, onDelete }) {
   const [f, setF] = useState(() => item ? { ...item } : {
     id:uid(), name:"", brand:"", detail:"", cat:cats[0] || "", unit:units[0] || "ชิ้น",
     price:0, min:0, vendor:"", ph:[]
@@ -1249,7 +1261,17 @@ function ItemSheet({ item, cats, units, isOwner, photo, onClose, onSave, onDelet
           <select value={f.unit} onChange={e => set("unit", e.target.value)}>{units.map(u => <option key={u} value={u}>{u}</option>)}</select>
         </Field></div>
       </div>
-      <Field label="ซื้อจากที่ไหน" hint="ไม่บังคับ"><input value={f.vendor} onChange={e => set("vendor", e.target.value)} placeholder="เช่น แม็คโคร / ร้านเคมีภัณฑ์" /></Field>
+      <Field label="ซื้อจากที่ไหน" hint="พิมพ์เอง หรือกดเลือกจากที่เคยใช้">
+        <input value={f.vendor} onChange={e => set("vendor", e.target.value)} placeholder="เช่น แม็คโคร / ร้านเคมีภัณฑ์" />
+        {vendors.length ? (
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:8 }}>
+            {vendors.map(v => (
+              <button key={v} className={"chip press " + (f.vendor === v ? "on" : "")}
+                onClick={() => set("vendor", f.vendor === v ? "" : v)}>{v}</button>
+            ))}
+          </div>
+        ) : null}
+      </Field>
       <div className="row" style={{ gap:8 }}>
         <div style={{ flex:1 }}><Field label="ราคาต่อหน่วย (บาท)">
           <input type="number" inputMode="decimal" value={f.price} onChange={e => set("price", e.target.value)} /></Field></div>
@@ -1661,10 +1683,11 @@ function orderGroups(order, items) {
 }
 
 /* ---------- TAB 5: ตั้งค่า ---------- */
-function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta,
+function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, items, photos, savePhoto, saveMeta,
                     logos, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }) {
   const [newCat, setNewCat] = useState("");
   const [newUnit, setNewUnit] = useState("");
+  const [newVendor, setNewVendor] = useState("");
   const [pin, setPin] = useState(cfg.ownerPin);
   const impRef = useRef(null);
   const catRef = useRef(null);
@@ -1750,6 +1773,37 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photo
           <button className="btn ghost press" onClick={() => {
             const v = newUnit.trim(); if (!v || units.includes(v)) return;
             saveMeta(null, [...units, v]); setNewUnit("");
+          }}>เพิ่ม</button>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div style={{ fontWeight:600, marginBottom:4 }}>🏬 ร้านที่ซื้อของ</div>
+        <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:10 }}>
+          ใช้เลือกตอนเพิ่มรายการ และใช้แยกกลุ่มในใบสั่งของ
+        </div>
+        <div style={{ display:"grid", gap:7, marginBottom:10 }}>
+          {!vendors.length ? <div style={{ fontSize:13, color:"var(--muted)" }}>ยังไม่มี — พิมพ์เพิ่มข้างล่าง หรือพิมพ์ตอนสร้างรายการ ระบบจะจำให้เอง</div> : null}
+          {vendors.map(v => {
+            const used = items.filter(i => i.vendor === v).length;
+            return (
+              <div key={v} className="row" style={{ gap:9 }}>
+                <span style={{ flex:1, fontSize:14 }}>{v}
+                  <span style={{ color:"var(--muted)", fontSize:11.5 }}>{used ? ` · ${used} รายการ` : ""}</span>
+                </span>
+                <button className="press" onClick={() => {
+                  if (used) { say(`ยังมี ${used} รายการซื้อจากร้านนี้`); return; }
+                  saveMeta(null, null, vendors.filter(x => x !== v));
+                }} style={{ color:"var(--red)", width:30 }}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+        <div className="row">
+          <input value={newVendor} onChange={e => setNewVendor(e.target.value)} placeholder="เพิ่มร้านใหม่" />
+          <button className="btn ghost press" onClick={() => {
+            const v = newVendor.trim(); if (!v || vendors.includes(v)) return;
+            saveMeta(null, null, [...vendors, v]); setNewVendor("");
           }}>เพิ่ม</button>
         </div>
       </div>
