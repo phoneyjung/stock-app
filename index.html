@@ -630,23 +630,61 @@ function App() {
     setShopId(merged[0].id);
     say("โหลดข้อมูลตัวอย่างแล้ว ✓");
   };
+  /* เช็คว่าเป็นข้อมูลตัวอย่างไหม — ดูทั้งธงและชื่อ เผื่อข้อมูลเก่าที่ยังไม่มีธง */
+  const isSeedShop = sh => sh.seed === true || SEED.shops.some(x => x.id === sh.id);
+  const seedNameSet = id => {
+    if (!SEED.shops.some(x => x.id === id)) return null;
+    return new Set(SEED.build(id).items.map(i => i.name));
+  };
+  const clearRecords = async sid => {
+    for (const m of lastMonths(12)) {
+      for (const col of ["stockCounts", "stockOrders"]) {
+        const d = await getDoc(`${col}/${sid}_${m}`);
+        if (d && (d.list || []).length) await setDoc(`${col}/${sid}_${m}`, { list: [] });
+      }
+    }
+  };
+
   const cleanupSeed = async () => {
     if (!confirm("ลบเฉพาะข้อมูลตัวอย่างที่ระบบสร้างให้\nรายการที่คุณเพิ่มเองจะไม่ถูกลบ\n\nยืนยัน?")) return;
     say("กำลังลบ…");
     const keep = [];
+    let nItem = 0, nShop = 0;
     for (const sh of shops) {
+      const names = seedNameSet(sh.id);
       const d = await getDoc("stockItems/" + sh.id);
       const all = (d && d.items) || [];
-      const mine = all.filter(x => !x.seed);
-      if (all.length !== mine.length) await txDoc("stockItems/" + sh.id, cur => ({ ...cur, items: mine }));
-      if (sh.seed && !mine.length) await setDoc("stockPhotos/" + sh.id, { p:{} });
-      else keep.push(sh);
+      const mine = all.filter(x => !(x.seed === true || (names && names.has(x.name))));
+      if (all.length !== mine.length) {
+        nItem += all.length - mine.length;
+        await txDoc("stockItems/" + sh.id, cur => ({ ...cur, items: mine }));
+      }
+      if (isSeedShop(sh) && !mine.length) {
+        nShop++;
+        await setDoc("stockPhotos/" + sh.id, { p:{} });
+        await clearRecords(sh.id);
+      } else keep.push(sh);
     }
-    await saveShops(keep);
-    setShopId(keep.length ? keep[0].id : "");
+    if (keep.length !== shops.length) await saveShops(keep);
+    setShopId(keep.some(x => x.id === shopId) ? shopId : (keep.length ? keep[0].id : ""));
     writeUndo(shopId, []);
-    say("ลบข้อมูลตัวอย่างแล้ว ✓");
+    if (!nItem && !nShop) alert("ไม่พบข้อมูลตัวอย่างในระบบ\n\nถ้าอยากล้างร้านนี้ทั้งหมด ให้ใช้ปุ่ม 🗑 ล้างข้อมูลร้านนี้ ด้านล่าง");
+    else say(`ลบแล้ว ${nShop} ร้าน · ${nItem} รายการ ✓`);
   };
+
+  const wipeShop = async () => {
+    if (!shop) return;
+    if (!confirm(`ล้างข้อมูลร้าน ${shop.name} ทั้งหมด\n\n· รายการของ ${items.length} รายการ\n· ประวัติการนับและใบสั่งของ\n· รูปทั้งหมด\n\nลบถาวร กู้คืนไม่ได้ ยืนยัน?`)) return;
+    if (prompt('พิมพ์คำว่า  ลบ  เพื่อยืนยัน') !== "ลบ") { say("ยกเลิกแล้ว"); return; }
+    say("กำลังล้าง…");
+    await txDoc("stockItems/" + shop.id, cur => ({ ...cur, items: [] }));
+    await setDoc("stockPhotos/" + shop.id, { p:{} });
+    await clearRecords(shop.id);
+    setItems([]); setCounts({}); setOrders({}); setOrderDraft({});
+    writeUndo(shop.id, []);
+    say("ล้างข้อมูลร้านนี้แล้ว ✓");
+  };
+
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, items }, null, 1)], { type:"application/json" });
     const a = document.createElement("a");
@@ -742,7 +780,7 @@ function App() {
           {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, saveCount, say, setTab }} />}
           {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, saveOrder, say }} />}
           {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, loadMonth, delRecord, isOwner, say }} />}
-          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, exportJson, importJson }} />}
+          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, exportJson, importJson }} />}
         </>
       )}
 
@@ -1493,7 +1531,7 @@ function orderGroups(order, items) {
 
 /* ---------- TAB 5: ตั้งค่า ---------- */
 function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta,
-                    isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, exportJson, importJson }) {
+                    isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, exportJson, importJson }) {
   const [newCat, setNewCat] = useState("");
   const [newUnit, setNewUnit] = useState("");
   const [pin, setPin] = useState(cfg.ownerPin);
@@ -1590,6 +1628,13 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photo
           <button className="btn ghost press" onClick={() => impRef.current && impRef.current.click()}>⬆️ นำเข้าไฟล์สำรอง</button>
           <button className="btn gold press" onClick={loadSeed}>✨ โหลดข้อมูลตัวอย่าง</button>
           <button className="btn danger press" onClick={cleanupSeed}>🧹 ลบข้อมูลตัวอย่างออก</button>
+          <button className="btn danger press" onClick={wipeShop} style={{ background:"#7A2733" }}>
+            🗑 ล้างข้อมูลร้านนี้ทั้งหมด
+          </button>
+        </div>
+        <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:8, lineHeight:1.6 }}>
+          🧹 ลบเฉพาะของที่ระบบสร้างให้ · ของที่คุณเพิ่มหรือแก้เองไม่หาย<br/>
+          🗑 ล้างทุกอย่างของร้านที่เปิดอยู่ รวมประวัติ — กู้คืนไม่ได้ ควรกด ⬇️ สำรองก่อน
         </div>
         <input ref={impRef} type="file" accept=".json,application/json" style={{ display:"none" }}
           onChange={e => { const f = e.target.files && e.target.files[0]; if (f) importJson(f); e.target.value = ""; }} />
