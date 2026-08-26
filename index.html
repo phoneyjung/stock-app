@@ -538,7 +538,8 @@ function App() {
   const [items, setItems] = useState([]);
   const [cats, setCats] = useState(DEFAULT_CATS);
   const [units, setUnits] = useState(DEFAULT_UNITS);
-  const [vendors, setVendors] = useState([]);
+  const [vendors, setVendors] = useState([]);      // ส่วนกลาง ใช้ร่วมทุกร้าน
+  const [shopVendors, setShopVendors] = useState([]); // ของเก่าที่เคยเก็บแยกร้าน
   const [photos, setPhotos] = useState({});
   const [logos, setLogos] = useState({});
   const [counts, setCounts] = useState({});   // { "YYYY-MM": [session,...] }
@@ -596,8 +597,9 @@ function App() {
     const u1 = watchDoc("stockApp/shops", d => { setShops((d && d.list) || []); setOnline(true); setBooting(false); });
     const u2 = watchDoc("stockApp/config", d => { if (d) setCfg({ ownerPin: d.ownerPin || "1234" }); });
     const u3 = watchDoc("stockApp/logos", d => setLogos((d && d.l) || {}));
+    const u4 = watchDoc("stockApp/vendors", d => setVendors((d && d.list) || []));
     const t = setTimeout(() => setBooting(false), 6000);
-    return () => { u1(); u2(); u3(); clearTimeout(t); };
+    return () => { u1(); u2(); u3(); u4(); clearTimeout(t); };
   }, []);
 
   useEffect(() => {
@@ -614,7 +616,7 @@ function App() {
       setItems((d && d.items) || []);
       setCats((d && d.cats && d.cats.length) ? d.cats : DEFAULT_CATS);
       setUnits((d && d.units && d.units.length) ? d.units : DEFAULT_UNITS);
-      setVendors((d && d.vendors) || []);
+      setShopVendors((d && d.vendors) || []);
       setLoadingShop(false);
     });
     const u2 = watchDoc("stockPhotos/" + shopId, d => setPhotos((d && d.p) || {}));
@@ -644,16 +646,21 @@ function App() {
   }, [shopId]);
 
   /* ---- writers ---- */
-  const saveMeta = async (nextCats, nextUnits, nextVendors) => {
+  const saveMeta = async (nextCats, nextUnits) => {
     if (nextCats) setCats(nextCats);
     if (nextUnits) setUnits(nextUnits);
-    if (nextVendors) setVendors(nextVendors);
     await txDoc("stockItems/" + shopId, cur => ({
       ...cur, items: cur.items || items,
       cats: nextCats || cur.cats || cats,
-      units: nextUnits || cur.units || units,
-      vendors: nextVendors || cur.vendors || vendors
+      units: nextUnits || cur.units || units
     }));
+  };
+
+  /* รายชื่อร้านที่ซื้อของ — เก็บส่วนกลาง ทุกสาขาเห็นเหมือนกัน */
+  const saveVendors = async list => {
+    const clean = [...new Set(list.filter(Boolean))].sort((a, b) => a.localeCompare(b, "th"));
+    setVendors(clean);
+    await txDoc("stockApp/vendors", () => ({ list: clean }));
   };
   const upsertItem = async (it, undoLabel) => {
     const before = items.find(x => x.id === it.id) || null;
@@ -824,7 +831,7 @@ function App() {
   };
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, vendors, items }, null, 1)], { type:"application/json" });
+    const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, vendors:vendorList, items }, null, 1)], { type:"application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = `stock-${shopId}-${today()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
@@ -836,8 +843,9 @@ function App() {
         const d = JSON.parse(fr.result);
         if (!Array.isArray(d.items)) throw new Error("ไฟล์ไม่ถูกต้อง");
         if (!confirm(`นำเข้า ${d.items.length} รายการ ทับข้อมูลร้านนี้?`)) return;
+        if (Array.isArray(d.vendors) && d.vendors.length) await saveVendors([...vendors, ...d.vendors]);
         setItems(d.items);
-        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items:d.items, cats:d.cats || cats, units:d.units || units, vendors:d.vendors || vendors }));
+        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items:d.items, cats:d.cats || cats, units:d.units || units }));
         say("นำเข้าแล้ว ✓");
       } catch (e) { alert("นำเข้าไม่สำเร็จ: " + e.message); }
     };
@@ -846,9 +854,16 @@ function App() {
 
   const vendorList = useMemo(() => {
     const set = new Set(vendors.filter(Boolean));
+    shopVendors.forEach(v => { if (v) set.add(v); });
     items.forEach(i => { if (i.vendor) set.add(i.vendor); });
     return [...set].sort((a, b) => a.localeCompare(b, "th"));
-  }, [vendors, items]);
+  }, [vendors, shopVendors, items]);
+
+  /* ย้ายรายชื่อเก่าที่เก็บแยกร้านขึ้นส่วนกลางให้เอง */
+  useEffect(() => {
+    if (LOCAL_MODE || loadingShop || !shopId) return;
+    if (vendorList.length && vendorList.length !== vendors.length) saveVendors(vendorList);
+  }, [vendorList, vendors, loadingShop, shopId]);
 
   /* ---- ยอดล่าสุดจากการนับ ---- */
   const latest = useMemo(() => {
@@ -942,10 +957,9 @@ function App() {
             <img className="emptypic" src="empty-box.jpg" alt="" />
             <div style={{ fontWeight:600, margin:"6px 0 4px" }}>ยังไม่มีร้าน</div>
             <div style={{ color:"var(--muted)", fontSize:13, marginBottom:14 }}>
-              เริ่มด้วยชุดตัวอย่าง 5 ร้าน พร้อมรายการของและราคา
+              เพิ่มร้านแรกเพื่อเริ่มใช้งาน
             </div>
-            <button className="btn gold press" style={{ width:"100%", marginBottom:8 }} onClick={loadSeed}>✨ โหลดข้อมูลตัวอย่าง</button>
-            <button className="btn ghost press" style={{ width:"100%" }} onClick={() => setSheet({ type:"shop", data:null })}>➕ เพิ่มร้านเอง</button>
+            <button className="btn press" style={{ width:"100%" }} onClick={() => setSheet({ type:"shop", data:null })}>➕ เพิ่มร้าน</button>
           </div>
         </div>
       ) : (
@@ -954,7 +968,7 @@ function App() {
           {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab }} />}
           {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo:logoOf(logos, shopId), saveOrder, say }} />}
           {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, isOwner, say }} />}
-          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, items, photos, logos, online, lastSync, dbError, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
+          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, saveVendors, items, photos, logos, online, lastSync, dbError, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
         </>
       )}
 
@@ -979,7 +993,7 @@ function App() {
           photo={sheet.data ? photos[sheet.data.id] : null} onClose={() => setSheet(null)}
           onSave={async (it, img) => {
             await upsertItem(it, (items.some(x => x.id === it.id) ? "แก้ไข " : "เพิ่ม ") + it.name);
-            if (it.vendor && !vendors.includes(it.vendor)) await saveMeta(null, null, [...vendors, it.vendor]);
+            if (it.vendor && !vendors.includes(it.vendor)) await saveVendors([...vendors, it.vendor]);
             if (img !== undefined) await savePhoto(it.id, img);
             setSheet(null); say("บันทึกแล้ว ✓");
           }}
@@ -1726,11 +1740,12 @@ function orderGroups(order, items) {
 }
 
 /* ---------- TAB 5: ตั้งค่า ---------- */
-function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, items, photos, savePhoto, saveMeta,
+function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, saveVendors, items, photos, savePhoto, saveMeta,
                     logos, online, lastSync, dbError, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }) {
   const [newCat, setNewCat] = useState("");
   const [newUnit, setNewUnit] = useState("");
   const [newVendor, setNewVendor] = useState("");
+  const [tapCount, setTapCount] = useState(0);
   const [pin, setPin] = useState(cfg.ownerPin);
   const impRef = useRef(null);
   const catRef = useRef(null);
@@ -1823,7 +1838,7 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, ite
       <div className="card" style={{ padding:14, marginBottom:14 }}>
         <div style={{ fontWeight:600, marginBottom:4 }}>🏬 ร้านที่ซื้อของ</div>
         <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:10 }}>
-          ใช้เลือกตอนเพิ่มรายการ และใช้แยกกลุ่มในใบสั่งของ
+          ใช้ร่วมกันทุกสาขา · เลือกตอนเพิ่มรายการ และใช้แยกกลุ่มในใบสั่งของ
         </div>
         <div style={{ display:"grid", gap:7, marginBottom:10 }}>
           {!vendors.length ? <div style={{ fontSize:13, color:"var(--muted)" }}>ยังไม่มี — พิมพ์เพิ่มข้างล่าง หรือพิมพ์ตอนสร้างรายการ ระบบจะจำให้เอง</div> : null}
@@ -1836,7 +1851,7 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, ite
                 </span>
                 <button className="press" onClick={() => {
                   if (used) { say(`ยังมี ${used} รายการซื้อจากร้านนี้`); return; }
-                  saveMeta(null, null, vendors.filter(x => x !== v));
+                  saveVendors(vendors.filter(x => x !== v));
                 }} style={{ color:"var(--red)", width:30 }}>✕</button>
               </div>
             );
@@ -1846,25 +1861,36 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, ite
           <input value={newVendor} onChange={e => setNewVendor(e.target.value)} placeholder="เพิ่มร้านใหม่" />
           <button className="btn ghost press" onClick={() => {
             const v = newVendor.trim(); if (!v || vendors.includes(v)) return;
-            saveMeta(null, null, [...vendors, v]); setNewVendor("");
+            saveVendors([...vendors, v]); setNewVendor("");
           }}>เพิ่ม</button>
         </div>
       </div>
 
       <div className="card" style={{ padding:14, marginBottom:14 }}>
-        <div style={{ fontWeight:600, marginBottom:10 }}>💾 ข้อมูล</div>
+        <div className="press" onClick={() => setTapCount(c => c + 1)}
+          style={{ fontWeight:600, marginBottom:10 }}>💾 ข้อมูล</div>
         <div style={{ display:"grid", gap:8 }}>
           <button className="btn ghost press" onClick={exportJson}>⬇️ สำรองรายการร้านนี้ (.json)</button>
           <button className="btn ghost press" onClick={() => impRef.current && impRef.current.click()}>⬆️ นำเข้าไฟล์สำรอง</button>
-          <button className="btn gold press" onClick={loadSeed}>✨ โหลดข้อมูลตัวอย่าง</button>
-          <button className="btn danger press" onClick={cleanupSeed}>🧹 ลบข้อมูลตัวอย่างออก</button>
-          <button className="btn danger press" onClick={wipeShop} style={{ background:"#7A2733" }}>
-            🗑 ล้างข้อมูลร้านนี้ทั้งหมด
-          </button>
-          <button className="btn danger press" onClick={resetAll} style={{ background:"#5A1B24" }}>
-            ☢️ ล้างข้อมูลทุกร้าน (เก็บร้านไว้)
-          </button>
         </div>
+        {tapCount >= 5 ? (
+          <div style={{ marginTop:14, paddingTop:14, borderTop:"1px dashed var(--line)" }}>
+            <div style={{ fontSize:12.5, color:"var(--red)", fontWeight:500, marginBottom:8 }}>
+              ⚠️ โซนอันตราย — ใช้ตอนตั้งค่าระบบเท่านั้น
+            </div>
+            <div style={{ display:"grid", gap:8 }}>
+              <button className="btn gold press" onClick={loadSeed}>✨ โหลดข้อมูลตัวอย่าง</button>
+              <button className="btn danger press" onClick={cleanupSeed}>🧹 ลบข้อมูลตัวอย่างออก</button>
+              <button className="btn danger press" onClick={wipeShop} style={{ background:"#7A2733" }}>
+                🗑 ล้างข้อมูลร้านนี้ทั้งหมด
+              </button>
+              <button className="btn danger press" onClick={resetAll} style={{ background:"#5A1B24" }}>
+                ☢️ ล้างข้อมูลทุกร้าน (เก็บร้านไว้)
+              </button>
+              <button className="btn ghost press" onClick={() => setTapCount(0)}>ซ่อนกลับ</button>
+            </div>
+          </div>
+        ) : null}
         <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:8, lineHeight:1.6 }}>
           🧹 ลบเฉพาะของที่ระบบสร้างให้ · ของที่คุณเพิ่มหรือแก้เองไม่หาย<br/>
           🗑 ล้างทุกอย่างของร้านที่เปิดอยู่ รวมประวัติ<br/>☢️ ล้างของทุกร้านพร้อมกัน แต่ชื่อร้าน สี ลาย โลโก้ ยังอยู่ครบ<br/>ทุกปุ่มกู้คืนไม่ได้ — ควรกด ⬇️ สำรองก่อนเสมอ
