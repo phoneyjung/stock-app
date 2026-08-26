@@ -13,6 +13,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="firebase-config.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
 <style>
 :root{
@@ -84,17 +85,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 <script type="text/babel" data-presets="react">
 /* ============================================================
    PLP STOCK  ·  แอปเช็คสต๊อกหลายร้าน
-   แก้ค่า FIREBASE_CONFIG ข้างล่างให้ตรงกับโปรเจกต์ Firebase
-   (ก๊อปจาก index.html ของ plp-finance ได้เลย)
+   ค่า Firebase อยู่ในไฟล์ firebase-config.js (แยกไว้ต่างหาก)
+   >> ห้ามแก้ไฟล์นี้เพื่อใส่ค่า Firebase <<
+   เวลาอัปเดตแอป ให้ทับเฉพาะ index.html ค่า config จะไม่หาย
    ============================================================ */
-const FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE.appspot.com",
-  messagingSenderId: "PASTE",
-  appId: "PASTE"
-};
+const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PASTE_API_KEY" };
 
 const { useState, useEffect, useMemo, useRef } = React;
 
@@ -738,7 +733,7 @@ function App() {
         <div style={{ margin:"10px 16px 0", background:"#FFF3E2", border:"1px solid #F0D9B4",
           borderRadius:14, padding:"9px 13px", fontSize:12.5, lineHeight:1.55 }}>
           🧪 <b>โหมดทดลอง</b> — ข้อมูลเก็บในเครื่องนี้เท่านั้น ยังไม่ซิงก์ข้ามอุปกรณ์<br/>
-          ใส่ค่า <b>FIREBASE_CONFIG</b> ใน index.html เมื่อพร้อม แล้วจะกลายเป็นระบบจริงทันที
+          สาเหตุ: ยังไม่พบไฟล์ <b>firebase-config.js</b> หรือยังไม่ได้ใส่ค่าในไฟล์นั้น
         </div>
       ) : null}
 
