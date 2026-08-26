@@ -17,66 +17,67 @@
 <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
 <style>
 :root{
-  --cream:#FBF6EC; --card:#FFFFFF; --navy:#113D6C; --gold:#C68B4A;
-  --ink:#1F2A37; --muted:#8A94A0; --line:#EBE3D4; --tint:#F3EEE2;
-  --red:#BA3D4D; --green:#2E7D5B; --sky:#5BB8E8;
+  --head:#113D6C; --tint:#F2F6FB;
+  --card:#FFFFFF; --gold:#C68B4A; --ink:#1F2A37; --muted:#8A94A0;
+  --line:#E7E2D8; --soft:#F3F0E8; --red:#BA3D4D; --green:#2E7D5B;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{
   font-family:'Kanit',system-ui,sans-serif; color:var(--ink);
-  background:var(--cream) url('bg-pattern.png') repeat; background-size:256px 256px;
+  background-color:var(--tint); background-repeat:repeat; background-size:256px 256px;
   background-attachment:fixed;
   font-weight:400; font-size:15px; padding-bottom:env(safe-area-inset-bottom);
+  transition:background-color .25s ease;
 }
 #root{max-width:560px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
-  box-shadow:0 2px 10px rgba(17,61,108,.06)}
-.press{cursor:pointer;transition:transform .08s ease,box-shadow .12s ease}
+  box-shadow:0 2px 10px rgba(20,30,45,.05)}
+.press{cursor:pointer;transition:transform .08s ease}
 .press:active{transform:scale(.975)}
 button{font-family:inherit;font-size:inherit;border:none;background:none;color:inherit}
 input,select,textarea{font-family:inherit;font-size:16px;color:var(--ink);
   border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;width:100%}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:-1px}
-.btn{background:var(--navy);color:#fff;border-radius:14px;padding:12px 16px;font-weight:500;
+.btn{background:var(--head);color:#fff;border-radius:14px;padding:12px 16px;font-weight:500;
   display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn.gold{background:var(--gold)}
-.btn.ghost{background:var(--tint);color:var(--navy)}
+.btn.ghost{background:var(--soft);color:var(--head)}
 .btn.danger{background:var(--red)}
+.btn:disabled{opacity:.45}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;
   font-size:13px;white-space:nowrap}
-.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.chip.on{background:var(--head);color:#fff;border-color:var(--head)}
 .row{display:flex;align-items:center;gap:10px}
-.scroll-x{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 6px;scrollbar-width:none}
+.scroll-x{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 8px;scrollbar-width:none}
 .scroll-x::-webkit-scrollbar{display:none}
-.lbl{font-size:12px;color:var(--muted);font-weight:400;margin-bottom:4px;display:block}
-.hdr{color:#fff;border-radius:0 0 26px 26px;padding:14px 16px 20px;
-  background:var(--navy) url('hdr-banner.jpg') no-repeat right center;
-  background-size:cover;position:relative;overflow:hidden}
-.hdr>*{position:relative;z-index:1}
+.lbl{font-size:12px;color:var(--muted);margin-bottom:4px;display:block}
+.hdr{color:#fff;border-radius:0 0 26px 26px;padding:14px 16px 18px;position:relative;overflow:hidden;
+  background:var(--head)}
 .hdr::before{content:"";position:absolute;inset:0;z-index:0;
-  background:linear-gradient(100deg,#0C2C4E 8%,rgba(12,44,78,.82) 38%,rgba(12,44,78,.15) 72%)}
+  background:linear-gradient(115deg,rgba(0,0,0,.22),rgba(255,255,255,.10))}
+.hdr>*{position:relative;z-index:1}
 .tag{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:500}
 .sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
-.scrim{position:absolute;inset:0;background:rgba(15,30,50,.45)}
-.sheet-in{position:relative;background:var(--cream);width:100%;max-width:560px;
+.scrim{position:absolute;inset:0;background:rgba(15,25,40,.45)}
+.sheet-in{position:relative;background:var(--tint);width:100%;max-width:560px;
   border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));
-  max-height:88vh;overflow:auto;animation:up .18s ease}
+  max-height:90vh;overflow:auto;animation:up .18s ease}
 @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
-.nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(255,255,255,.96);
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(255,255,255,.97);
   backdrop-filter:blur(10px);border-top:1px solid var(--line);
   padding:6px 0 calc(6px + env(safe-area-inset-bottom));display:flex}
 .nav>button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
   padding:6px 0;font-size:10.5px;color:var(--muted)}
-.nav>button.on{color:var(--navy);font-weight:500}
+.nav>button.on{color:var(--head);font-weight:500}
 .nav .ic{font-size:20px;line-height:1}
-.thumb{width:46px;height:46px;border-radius:12px;object-fit:cover;background:var(--tint);
+.thumb{width:48px;height:48px;border-radius:12px;object-fit:cover;background:var(--soft);
   display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
-.big{font-size:26px;font-weight:600;line-height:1.1}
-.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
 .kv:last-child{border-bottom:none}
-.empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px}
-.emptypic{width:150px;height:150px;object-fit:contain;opacity:.9;margin:0 auto 4px;display:block}
+.empty{text-align:center;color:var(--muted);padding:36px 20px;font-size:14px}
+.emptypic{width:140px;height:140px;object-fit:contain;opacity:.92;margin:0 auto 6px;display:block;border-radius:20px}
+.sect{font-weight:600;font-size:13px;color:var(--muted);margin:16px 16px 7px}
 </style>
 </head>
 <body>
@@ -86,8 +87,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 /* ============================================================
    PLP STOCK  ·  แอปเช็คสต๊อกหลายร้าน
    ค่า Firebase อยู่ในไฟล์ firebase-config.js (แยกไว้ต่างหาก)
-   >> ห้ามแก้ไฟล์นี้เพื่อใส่ค่า Firebase <<
-   เวลาอัปเดตแอป ให้ทับเฉพาะ index.html ค่า config จะไม่หาย
+   >> ห้ามใส่ค่า Firebase ในไฟล์นี้ <<
+   อัปเดตแอป = ทับเฉพาะ index.html ค่า config จะไม่หาย
    ============================================================ */
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PASTE_API_KEY" };
 
@@ -103,117 +104,16 @@ const nf = n => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("th-TH
 const money = n => "฿" + nf(n);
 const THMON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const thDate = s => { if (!s) return "-"; const [y,m,d] = s.split("-"); return `${+d} ${THMON[+m-1]} ${(+y+543)%100}`; };
-const daysLeft = s => { if (!s) return null; return Math.round((new Date(s+"T00:00:00") - new Date(today()+"T00:00:00")) / 86400000); };
+const lastMonths = n => {
+  const r = []; const d = new Date();
+  for (let i = 0; i < n; i++) { r.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); d.setMonth(d.getMonth()-1); }
+  return r;
+};
 
-const DEFAULT_CATS = ["น้ำยา/เคมี","อะไหล่","อุปกรณ์","ของใช้สิ้นเปลือง","วัตถุดิบ","แพ็กเกจจิ้ง"];
-const DEFAULT_UNITS = ["ชิ้น","ขวด","ถุง","แกลลอน","กล่อง","กก.","ลิตร","แพ็ค","ม้วน","ชุด"];
-const MOVE_LABEL = { in:"รับเข้า", out:"เบิกออก", adj:"ปรับยอด" };
-const MOVE_COLOR = { in:"var(--green)", out:"var(--red)", adj:"var(--gold)" };
-
-/* ---------- ข้อมูลตั้งต้น (กดโหลดได้ในแท็บตั้งค่า) ---------- */
-const U_ALL = ["ชิ้น","ขวด","ถุง","แกลลอน","กล่อง","กระป๋อง","กระปุก","แพ็ค","ห่อ","ม้วน","ลัง","ชุด","กก.","ลิตร"];
-const C_LAUNDRY = ["น้ำยา/เคมี","ของใช้สิ้นเปลือง","อะไหล่","อุปกรณ์","แพ็กเกจจิ้ง"];
-const C_SPA = ["วัตถุดิบ","ของใช้สิ้นเปลือง","ผ้า/อุปกรณ์"];
-const C_TEA = ["ชา/ผง","นม/ครีม","ไซรัป/น้ำเชื่อม","ท็อปปิ้ง","แพ็กเกจจิ้ง","ของใช้สิ้นเปลือง"];
-
-/* [ชื่อ, หมวด, หน่วย, ยอด, ทุน/หน่วย, จุดสั่งซื้อ] */
-const I_LAUNDRY = [
-  ["น้ำยาซักผ้า 20 ลิตร","น้ำยา/เคมี","แกลลอน",2,850,1],
-  ["น้ำยาปรับผ้านุ่ม 20 ลิตร","น้ำยา/เคมี","แกลลอน",2,750,1],
-  ["น้ำยาซักผ้าขาว (คลอรีน)","น้ำยา/เคมี","แกลลอน",1,450,1],
-  ["ผงซักฟอกเติมเครื่อง","น้ำยา/เคมี","ถุง",3,180,2],
-  ["แผ่นอบผ้าหอม","น้ำยา/เคมี","กล่อง",2,120,1],
-  ["น้ำยาถูพื้น","น้ำยา/เคมี","ขวด",2,60,1],
-  ["น้ำยาเช็ดกระจก","น้ำยา/เคมี","ขวด",1,55,1],
-  ["ถุงขยะดำ 30x40","ของใช้สิ้นเปลือง","แพ็ค",3,45,2],
-  ["ถุงหูหิ้วใส่ผ้า","ของใช้สิ้นเปลือง","แพ็ค",5,35,3],
-  ["กระดาษทิชชู่ม้วนใหญ่","ของใช้สิ้นเปลือง","ห่อ",2,95,1],
-  ["สเปรย์แอลกอฮอล์","ของใช้สิ้นเปลือง","ขวด",2,50,1],
-  ["กระดาษสลิปความร้อน","ของใช้สิ้นเปลือง","ม้วน",6,20,4],
-  ["เทปกาวใส","ของใช้สิ้นเปลือง","ม้วน",3,15,2],
-  ["ปากกาเมจิก","ของใช้สิ้นเปลือง","ชิ้น",5,20,2],
-  ["ฟิลเตอร์ใยผ้า (เครื่องอบ)","อะไหล่","ชิ้น",4,150,2],
-  ["ลูกยางประตูเครื่องซัก","อะไหล่","ชิ้น",1,900,1],
-  ["สายพานเครื่องอบ","อะไหล่","ชิ้น",1,650,1],
-  ["หลอดไฟ LED","อะไหล่","ชิ้น",4,80,2],
-  ["ฟิวส์","อะไหล่","ชิ้น",6,25,3],
-  ["ตะกร้าผ้า","อุปกรณ์","ชิ้น",8,120,4],
-  ["ไม้แขวนเสื้อ","อุปกรณ์","ชิ้น",30,8,20],
-  ["ไม้กวาด + ที่โกยผง","อุปกรณ์","ชุด",1,150,1],
-  ["ผ้าม็อบถูพื้น","อุปกรณ์","ชิ้น",2,90,1],
-];
-const I_TEDDY_EXTRA = [
-  ["ถุงพลาสติกใส่ผ้าพับ","แพ็กเกจจิ้ง","แพ็ค",4,60,2],
-  ["สติกเกอร์ติดถุง","แพ็กเกจจิ้ง","ม้วน",2,120,1],
-  ["ใบเสร็จรับฝากผ้า","แพ็กเกจจิ้ง","ชุด",5,25,2],
-];
-const I_SPA = [
-  ["น้ำมันนวดตัว","วัตถุดิบ","ขวด",4,250,2],
-  ["สครับขัดผิว","วัตถุดิบ","กระปุก",3,320,1],
-  ["โลชั่นบำรุงผิว","วัตถุดิบ","ขวด",3,180,1],
-  ["น้ำมันหอมระเหย","วัตถุดิบ","ขวด",5,150,2],
-  ["มาส์กหน้า","วัตถุดิบ","แพ็ค",4,90,2],
-  ["ผ้าปูเตียงใช้แล้วทิ้ง","ของใช้สิ้นเปลือง","แพ็ค",5,120,2],
-  ["กางเกงกระดาษ","ของใช้สิ้นเปลือง","แพ็ค",4,80,2],
-  ["สำลีแผ่น","ของใช้สิ้นเปลือง","ถุง",6,35,3],
-  ["ถุงมือยาง","ของใช้สิ้นเปลือง","กล่อง",3,110,1],
-  ["เทียนอโรมา","ของใช้สิ้นเปลือง","ชิ้น",10,45,5],
-  ["ผ้าเช็ดตัวใหญ่","ผ้า/อุปกรณ์","ชิ้น",20,150,10],
-  ["ผ้าคลุมตัว","ผ้า/อุปกรณ์","ชิ้น",15,120,8],
-  ["ชามแช่เท้า","ผ้า/อุปกรณ์","ชิ้น",4,180,2],
-];
-const I_TEA = [
-  ["ชาแดง 500g","ชา/ผง","ถุง",4,210,2],
-  ["ชาเขียว 500g","ชา/ผง","ถุง",3,295,2],
-  ["ชาไทย 5kg","ชา/ผง","ถุง",1,1650,1],
-  ["มัทฉะ 100g","ชา/ผง","ถุง",2,175,1],
-  ["ผงชาเขียวนม 4kg","ชา/ผง","ถุง",1,1100,1],
-  ["โกโก้ Tulip 500g","ชา/ผง","ถุง",2,197,1],
-  ["ไมโล 900g","ชา/ผง","ถุง",1,185,1],
-  ["โอวัลตินเฟลค 450g","ชา/ผง","ถุง",1,115,1],
-  ["นมสด Meiji 5L","นม/ครีม","กล่อง",4,230,2],
-  ["นมข้นจืด Carnation 385g","นม/ครีม","กระป๋อง",12,25,6],
-  ["นมข้นหวาน Carnation 385g","นม/ครีม","กระป๋อง",12,25,6],
-  ["ผงชีส 1 (4kg)","นม/ครีม","ถุง",1,1900,1],
-  ["ผงชีส 2 (2.4kg)","นม/ครีม","ถุง",1,950,1],
-  ["บราวน์ชูการ์ 3.5L","ไซรัป/น้ำเชื่อม","แกลลอน",1,900,1],
-  ["ไซรัปพีช 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,150,1],
-  ["ไซรัปส้ม 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,150,1],
-  ["ไซรัปเมล่อน 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,150,1],
-  ["ไซรัปติ่งฟง 750ml","ไซรัป/น้ำเชื่อม","ขวด",3,75,2],
-  ["เฮลซ์บลูบอย 710ml","ไซรัป/น้ำเชื่อม","ขวด",2,70,1],
-  ["ไซรัปลองบีช 750ml","ไซรัป/น้ำเชื่อม","ขวด",2,140,1],
-  ["ไข่มุก Echo 1kg","ท็อปปิ้ง","ถุง",6,40,3],
-  ["บุก 800g","ท็อปปิ้ง","ถุง",3,80,2],
-  ["พีช Dole (20 ชิ้น)","ท็อปปิ้ง","กระป๋อง",4,127,2],
-  ["น้ำมะพร้าว Malee","ท็อปปิ้ง","ขวด",3,71,2],
-  ["แก้ว (1000 ใบ)","แพ็กเกจจิ้ง","ลัง",2,2790,1],
-  ["ฝาซีล (4300 ใบ)","แพ็กเกจจิ้ง","ม้วน",1,1260,1],
-  ["หลอด","แพ็กเกจจิ้ง","ห่อ",5,60,3],
-  ["ถุงหิ้วใส่แก้ว","แพ็กเกจจิ้ง","แพ็ค",4,55,2],
-  ["ถุงขยะดำ","ของใช้สิ้นเปลือง","แพ็ค",3,45,2],
-  ["ทิชชู่ม้วน","ของใช้สิ้นเปลือง","ห่อ",2,95,1],
-];
-
-const mkItems = rows => rows.map(r => ({
-  id: uid(), name: r[0], cat: r[1], unit: r[2],
-  qty: Number(r[3]) || 0, cost: Number(r[4]) || 0, min: Number(r[5]) || 0, exp: "", emo: "📦", seed: true
-}));
-
-const SEED = {
-  shops: [
-    { id:"otteri", name:"Otteri สาขา 1", emo:"🧺", logo:"", seed:true },
-    { id:"teddy1", name:"Teddy สาขา 1", emo:"🧺", logo:"", seed:true },
-    { id:"teddy2", name:"Teddy สาขา 2", emo:"🧺", logo:"", seed:true },
-    { id:"spa",    name:"ร้านสปา",       emo:"🪷", logo:"", seed:true },
-    { id:"owlcha", name:"Owl Cha",       emo:"🧋", logo:"", seed:true },
-  ],
-  build(id) {
-    if (id === "owlcha") return { cats:C_TEA, units:U_ALL, items:mkItems(I_TEA) };
-    if (id === "spa")    return { cats:C_SPA, units:U_ALL, items:mkItems(I_SPA) };
-    const rows = id === "otteri" ? I_LAUNDRY : I_LAUNDRY.concat(I_TEDDY_EXTRA);
-    return { cats:C_LAUNDRY, units:U_ALL, items:mkItems(rows) };
-  }
+const MEM = {};
+const LS = {
+  get(k) { try { const v = localStorage.getItem(k); return v === null ? (MEM[k] === undefined ? null : MEM[k]) : v; } catch (e) { return MEM[k] === undefined ? null : MEM[k]; } },
+  set(k, v) { MEM[k] = v; try { localStorage.setItem(k, v); } catch (e) {} }
 };
 
 function compressImg(file, max, q) {
@@ -245,13 +145,42 @@ function loadScript(src) {
   });
 }
 
-/* localStorage ที่ปลอดภัย — ถ้าเบราว์เซอร์บล็อก จะใช้หน่วยความจำแทน (ไม่ทำให้จอขาว) */
-const MEM = {};
-const LS = {
-  get(k) { try { const v = localStorage.getItem(k); return v === null ? (MEM[k] === undefined ? null : MEM[k]) : v; } catch (e) { return MEM[k] === undefined ? null : MEM[k]; } },
-  set(k, v) { MEM[k] = v; try { localStorage.setItem(k, v); } catch (e) {} },
-  keys() { try { return Object.keys(localStorage); } catch (e) { return Object.keys(MEM); } }
-};
+/* ---------- สีประจำร้าน ---------- */
+const PALETTE = [
+  { k:"navy",    n:"น้ำเงินเข้ม",    head:"#113D6C", tint:"#F1F5FA" },
+  { k:"sky",     n:"ฟ้าทะเล",       head:"#15607F", tint:"#EEF7FB" },
+  { k:"teal",    n:"เขียวน้ำทะเล",   head:"#0F5C5B", tint:"#EDF7F6" },
+  { k:"forest",  n:"เขียวป่า",       head:"#1F5132", tint:"#EFF7F1" },
+  { k:"olive",   n:"เขียวมะกอก",     head:"#4A5D23", tint:"#F4F7EB" },
+  { k:"mustard", n:"เหลืองมัสตาร์ด", head:"#8A6A11", tint:"#FBF6E5" },
+  { k:"amber",   n:"ส้มอำพัน",       head:"#9A5B1B", tint:"#FDF4E9" },
+  { k:"terra",   n:"ส้มอิฐ",         head:"#9C4221", tint:"#FCF1EB" },
+  { k:"rose",    n:"ชมพูกุหลาบ",     head:"#9B2C4E", tint:"#FCF0F3" },
+  { k:"plum",    n:"ม่วงพลัม",       head:"#6B2D5C", tint:"#F9F0F7" },
+  { k:"violet",  n:"ม่วงไวโอเล็ต",   head:"#4C3B8F", tint:"#F4F2FC" },
+  { k:"indigo",  n:"สีคราม",         head:"#2A3F8F", tint:"#F1F3FC" },
+  { k:"cocoa",   n:"น้ำตาลโกโก้",    head:"#5B3A24", tint:"#F8F2EC" },
+  { k:"slate",   n:"เทาหิน",         head:"#37474F", tint:"#F1F5F6" },
+];
+const colorOf = k => PALETTE.find(x => x.k === k) || PALETTE[0];
+
+/* ---------- ลายพื้นหลัง ---------- */
+const BGS = [
+  { k:"none",     n:"ไม่มีลาย" },
+  { k:"bubble",   n:"ฟองสบู่",        f:"bg-1.png" },
+  { k:"towel",    n:"ผ้าพับ",          f:"bg-2.png" },
+  { k:"washer",   n:"เครื่องซัก",      f:"bg-3.png" },
+  { k:"boba",     n:"ชานมไข่มุก",      f:"bg-4.png" },
+  { k:"tea",      n:"ใบชา",            f:"bg-5.png" },
+  { k:"lotus",    n:"ดอกบัว",          f:"bg-6.png" },
+  { k:"box",      n:"กล่อง",           f:"bg-7.png" },
+  { k:"stripe",   n:"ลายทางเฉียง",     f:"bg-8.png" },
+  { k:"hexa",     n:"รังผึ้ง",         f:"bg-9.png" },
+  { k:"confetti", n:"คอนเฟตตี",        f:"bg-10.png" },
+];
+
+const DEFAULT_CATS  = ["น้ำยา/เคมี","ของใช้สิ้นเปลือง","อะไหล่","อุปกรณ์","แพ็กเกจจิ้ง"];
+const DEFAULT_UNITS = ["ชิ้น","ขวด","ถุง","แกลลอน","กล่อง","กระป๋อง","กระปุก","แพ็ค","ห่อ","ม้วน","ลัง","ชุด","กก.","ลิตร"];
 
 /* ---------- firebase ---------- */
 let db = null, fbReady = false;
@@ -264,7 +193,6 @@ try {
   }
 } catch (e) { console.error(e); }
 
-/* ถ้ายังไม่ได้ใส่ค่า Firebase → ทำงานใน "โหมดทดลอง" เก็บข้อมูลในเครื่องแทน */
 const LOCAL_MODE = !fbReady;
 const LKEY = p => "psdb:" + p;
 
@@ -280,17 +208,10 @@ async function setDoc(p, data) {
   }
   try { await db.doc(p).set(data, { merge:true }); return true; } catch (e) { console.error(p, e); return false; }
 }
-
-/* เฝ้าดูแบบเรียลไทม์ — ทุกเครื่องเห็นการแก้ไขทันที */
 function watchDoc(p, cb) {
   if (LOCAL_MODE) { getDoc(p).then(cb); return () => {}; }
-  return db.doc(p).onSnapshot(
-    s => cb(s.exists ? s.data() : null),
-    e => console.error("watch " + p, e)
-  );
+  return db.doc(p).onSnapshot(s => cb(s.exists ? s.data() : null), e => console.error("watch " + p, e));
 }
-
-/* เขียนแบบ transaction — อ่านของล่าสุดก่อนเขียนเสมอ กันสองเครื่องเขียนทับกัน */
 async function txDoc(p, mutate) {
   if (LOCAL_MODE) {
     const cur = (await getDoc(p)) || {};
@@ -307,59 +228,184 @@ async function txDoc(p, mutate) {
   });
 }
 
-/* ต่อท้ายประวัติโดยไม่แตะของเดิม */
-async function appendMoves(p, arr) {
-  if (LOCAL_MODE) {
-    const cur = (await getDoc(p)) || {};
-    LS.set(LKEY(p), JSON.stringify({ moves: [...arr, ...(cur.moves || [])] }));
-    return;
+/* ---------- ข้อมูลตัวอย่าง ---------- */
+/* [ชื่อ, ยี่ห้อ, หมวด, หน่วย, ราคา/หน่วย, ขั้นต่ำ, ร้านที่ซื้อ] */
+const I_LAUNDRY = [
+  ["น้ำยาซักผ้า 20 ลิตร","Kao","น้ำยา/เคมี","แกลลอน",850,1,"ร้านเคมีภัณฑ์"],
+  ["น้ำยาปรับผ้านุ่ม 20 ลิตร","Comfort","น้ำยา/เคมี","แกลลอน",750,1,"ร้านเคมีภัณฑ์"],
+  ["น้ำยาซักผ้าขาว (คลอรีน)","Haiter","น้ำยา/เคมี","แกลลอน",450,1,"ร้านเคมีภัณฑ์"],
+  ["ผงซักฟอกเติมเครื่อง","Attack","น้ำยา/เคมี","ถุง",180,2,"แม็คโคร"],
+  ["แผ่นอบผ้าหอม","Downy","น้ำยา/เคมี","กล่อง",120,1,"แม็คโคร"],
+  ["น้ำยาถูพื้น","Magiclean","น้ำยา/เคมี","ขวด",60,1,"แม็คโคร"],
+  ["ถุงขยะดำ 30x40","","ของใช้สิ้นเปลือง","แพ็ค",45,2,"แม็คโคร"],
+  ["ถุงหูหิ้วใส่ผ้า","","ของใช้สิ้นเปลือง","แพ็ค",35,3,"ร้านบรรจุภัณฑ์"],
+  ["กระดาษทิชชู่ม้วนใหญ่","Scott","ของใช้สิ้นเปลือง","ห่อ",95,1,"แม็คโคร"],
+  ["สเปรย์แอลกอฮอล์","","ของใช้สิ้นเปลือง","ขวด",50,1,"แม็คโคร"],
+  ["กระดาษสลิปความร้อน","","ของใช้สิ้นเปลือง","ม้วน",20,4,"ร้านเครื่องเขียน"],
+  ["ฟิลเตอร์ใยผ้า (เครื่องอบ)","Octopus","อะไหล่","ชิ้น",150,2,"ตัวแทนเครื่อง"],
+  ["ลูกยางประตูเครื่องซัก","Octopus","อะไหล่","ชิ้น",900,1,"ตัวแทนเครื่อง"],
+  ["สายพานเครื่องอบ","Octopus","อะไหล่","ชิ้น",650,1,"ตัวแทนเครื่อง"],
+  ["หลอดไฟ LED","","อะไหล่","ชิ้น",80,2,"ไทวัสดุ"],
+  ["ตะกร้าผ้า","","อุปกรณ์","ชิ้น",120,4,"ไทวัสดุ"],
+  ["ไม้แขวนเสื้อ","","อุปกรณ์","ชิ้น",8,20,"ไทวัสดุ"],
+  ["ผ้าม็อบถูพื้น","","อุปกรณ์","ชิ้น",90,1,"ไทวัสดุ"],
+];
+const I_TEDDY_EXTRA = [
+  ["ถุงพลาสติกใส่ผ้าพับ","","แพ็กเกจจิ้ง","แพ็ค",60,2,"ร้านบรรจุภัณฑ์"],
+  ["สติกเกอร์ติดถุง","","แพ็กเกจจิ้ง","ม้วน",120,1,"ร้านป้าย"],
+];
+const C_SPA = ["วัตถุดิบ","ของใช้สิ้นเปลือง","ผ้า/อุปกรณ์"];
+const I_SPA = [
+  ["น้ำมันนวดตัว","","วัตถุดิบ","ขวด",250,2,"ร้านสปาซัพพลาย"],
+  ["สครับขัดผิว","","วัตถุดิบ","กระปุก",320,1,"ร้านสปาซัพพลาย"],
+  ["โลชั่นบำรุงผิว","","วัตถุดิบ","ขวด",180,1,"ร้านสปาซัพพลาย"],
+  ["น้ำมันหอมระเหย","","วัตถุดิบ","ขวด",150,2,"ร้านสปาซัพพลาย"],
+  ["ผ้าปูเตียงใช้แล้วทิ้ง","","ของใช้สิ้นเปลือง","แพ็ค",120,2,"ร้านสปาซัพพลาย"],
+  ["กางเกงกระดาษ","","ของใช้สิ้นเปลือง","แพ็ค",80,2,"ร้านสปาซัพพลาย"],
+  ["สำลีแผ่น","","ของใช้สิ้นเปลือง","ถุง",35,3,"แม็คโคร"],
+  ["ผ้าเช็ดตัวใหญ่","","ผ้า/อุปกรณ์","ชิ้น",150,10,"ร้านผ้า"],
+  ["ผ้าคลุมตัว","","ผ้า/อุปกรณ์","ชิ้น",120,8,"ร้านผ้า"],
+];
+const C_TEA = ["ชา/ผง","นม/ครีม","ไซรัป/น้ำเชื่อม","ท็อปปิ้ง","แพ็กเกจจิ้ง","ของใช้สิ้นเปลือง"];
+const I_TEA = [
+  ["ชาแดง 500g","","ชา/ผง","ถุง",210,2,"ร้านวัตถุดิบชา"],
+  ["ชาเขียว 500g","","ชา/ผง","ถุง",295,2,"ร้านวัตถุดิบชา"],
+  ["ชาไทย 5kg","","ชา/ผง","ถุง",1650,1,"ร้านวัตถุดิบชา"],
+  ["มัทฉะ 100g","","ชา/ผง","ถุง",175,1,"ร้านวัตถุดิบชา"],
+  ["ผงชาเขียวนม 4kg","","ชา/ผง","ถุง",1100,1,"ร้านวัตถุดิบชา"],
+  ["โกโก้ Tulip 500g","Tulip","ชา/ผง","ถุง",197,1,"แม็คโคร"],
+  ["ไมโล 900g","Milo","ชา/ผง","ถุง",185,1,"แม็คโคร"],
+  ["โอวัลตินเฟลค 450g","Ovaltine","ชา/ผง","ถุง",115,1,"แม็คโคร"],
+  ["นมสด Meiji 5L","Meiji","นม/ครีม","กล่อง",230,2,"แม็คโคร"],
+  ["นมข้นจืด 385g","Carnation","นม/ครีม","กระป๋อง",25,6,"แม็คโคร"],
+  ["นมข้นหวาน 385g","Carnation","นม/ครีม","กระป๋อง",25,6,"แม็คโคร"],
+  ["ผงชีส 1 (4kg)","","นม/ครีม","ถุง",1900,1,"ร้านวัตถุดิบชา"],
+  ["ผงชีส 2 (2.4kg)","","นม/ครีม","ถุง",950,1,"ร้านวัตถุดิบชา"],
+  ["บราวน์ชูการ์ 3.5L","","ไซรัป/น้ำเชื่อม","แกลลอน",900,1,"ร้านวัตถุดิบชา"],
+  ["ไซรัปพีช 750ml","","ไซรัป/น้ำเชื่อม","ขวด",150,1,"ร้านวัตถุดิบชา"],
+  ["ไซรัปส้ม 750ml","","ไซรัป/น้ำเชื่อม","ขวด",150,1,"ร้านวัตถุดิบชา"],
+  ["ไซรัปเมล่อน 750ml","","ไซรัป/น้ำเชื่อม","ขวด",150,1,"ร้านวัตถุดิบชา"],
+  ["ไซรัปติ่งฟง 750ml","ติ่งฟง","ไซรัป/น้ำเชื่อม","ขวด",75,2,"แม็คโคร"],
+  ["เฮลซ์บลูบอย 710ml","Hale's","ไซรัป/น้ำเชื่อม","ขวด",70,1,"แม็คโคร"],
+  ["ไข่มุก 1kg","Echo","ท็อปปิ้ง","ถุง",40,3,"ร้านวัตถุดิบชา"],
+  ["บุก 800g","","ท็อปปิ้ง","ถุง",80,2,"ร้านวัตถุดิบชา"],
+  ["พีช Dole (20 ชิ้น)","Dole","ท็อปปิ้ง","กระป๋อง",127,2,"แม็คโคร"],
+  ["น้ำมะพร้าว","Malee","ท็อปปิ้ง","ขวด",71,2,"แม็คโคร"],
+  ["แก้ว (1000 ใบ)","","แพ็กเกจจิ้ง","ลัง",2790,1,"ร้านบรรจุภัณฑ์"],
+  ["ฝาซีล (4300 ใบ)","","แพ็กเกจจิ้ง","ม้วน",1260,1,"ร้านบรรจุภัณฑ์"],
+  ["หลอด","","แพ็กเกจจิ้ง","ห่อ",60,3,"ร้านบรรจุภัณฑ์"],
+  ["ถุงหิ้วใส่แก้ว","","แพ็กเกจจิ้ง","แพ็ค",55,2,"ร้านบรรจุภัณฑ์"],
+];
+const mkItems = rows => rows.map(r => ({
+  id: uid(), name: r[0], brand: r[1] || "", cat: r[2], unit: r[3],
+  price: Number(r[4]) || 0, min: Number(r[5]) || 0, vendor: r[6] || "",
+  detail: "", ph: [], seed: true
+}));
+const SEED = {
+  shops: [
+    { id:"otteri", name:"Otteri สาขา 1", emo:"🧺", color:"navy",    bg:"bubble", seed:true },
+    { id:"teddy1", name:"Teddy สาขา 1",  emo:"🧺", color:"sky",     bg:"bubble", seed:true },
+    { id:"teddy2", name:"Teddy สาขา 2",  emo:"🧺", color:"teal",    bg:"bubble", seed:true },
+    { id:"spa",    name:"ร้านสปา",        emo:"🪷", color:"plum",    bg:"bubble", seed:true },
+    { id:"owlcha", name:"Owl Cha",        emo:"🧋", color:"mustard", bg:"bubble", seed:true },
+  ],
+  build(id) {
+    if (id === "owlcha") return { cats:C_TEA, units:DEFAULT_UNITS, items:mkItems(I_TEA) };
+    if (id === "spa")    return { cats:C_SPA, units:DEFAULT_UNITS, items:mkItems(I_SPA) };
+    const rows = id === "otteri" ? I_LAUNDRY : I_LAUNDRY.concat(I_TEDDY_EXTRA);
+    return { cats:DEFAULT_CATS, units:DEFAULT_UNITS, items:mkItems(rows) };
   }
-  await db.doc(p).set({ moves: firebase.firestore.FieldValue.arrayUnion(...arr) }, { merge:true });
-}
-async function removeMoveDoc(p, mv) {
-  if (LOCAL_MODE) {
-    const cur = (await getDoc(p)) || {};
-    LS.set(LKEY(p), JSON.stringify({ moves: (cur.moves || []).filter(x => x.id !== mv.id) }));
-    return;
-  }
-  await db.doc(p).set({ moves: firebase.firestore.FieldValue.arrayRemove(mv) }, { merge:true });
+};
+
+/* ---------- สร้างข้อความ / รูป สำหรับส่งต่อ ---------- */
+function buildText(kind, shopName, head, groups, footer) {
+  let t = `${kind}  ${shopName}\n${head}\n`;
+  groups.forEach(g => {
+    t += `\n【${g.title}】\n`;
+    g.lines.forEach(l => { t += `• ${l.left}${l.right ? "  —  " + l.right : ""}${l.flag ? " " + l.flag : ""}\n`; });
+  });
+  if (footer) t += `\n${footer}`;
+  return t;
 }
 
-/* คำนวณยอดใหม่จากรายการเคลื่อนไหว */
-function applyDelta(list, moves) {
-  return list.map(it => {
-    const rel = moves.filter(m => m.itemId === it.id);
-    if (!rel.length) return it;
-    let q = Number(it.qty) || 0;
-    rel.forEach(m => {
-      if (m.type === "in") q += Number(m.qty);
-      else if (m.type === "out") q -= Number(m.qty);
-      else q = Number(m.qty);
+function renderImage(opts) {
+  const W = 760, P = 34;
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const F = w => `${w} 20px Kanit, sans-serif`;
+  let h = 150;
+  opts.groups.forEach(g => { h += 46 + g.lines.length * 38; });
+  h += opts.footer ? 90 : 40;
+  c.width = W; c.height = h;
+
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, h);
+  ctx.fillStyle = opts.color; ctx.fillRect(0, 0, W, 108);
+  ctx.fillStyle = "#fff";
+  ctx.font = "600 30px Kanit, sans-serif";
+  ctx.fillText(opts.title, P, 48);
+  ctx.font = "400 19px Kanit, sans-serif";
+  ctx.globalAlpha = .85;
+  ctx.fillText(opts.head, P, 82);
+  ctx.globalAlpha = 1;
+
+  let y = 152;
+  opts.groups.forEach(g => {
+    ctx.fillStyle = opts.color; ctx.globalAlpha = .10;
+    ctx.fillRect(P - 10, y - 24, W - (P - 10) * 2, 34);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = opts.color;
+    ctx.font = "600 20px Kanit, sans-serif";
+    ctx.fillText(g.title, P, y);
+    y += 44;
+    g.lines.forEach(l => {
+      ctx.fillStyle = l.flag ? "#BA3D4D" : "#1F2A37";
+      ctx.font = F(l.flag ? 500 : 400);
+      let left = l.left;
+      while (ctx.measureText(left).width > W - P * 2 - 190) left = left.slice(0, -2);
+      if (left !== l.left) left += "…";
+      ctx.fillText(left + (l.flag ? "  " + l.flag : ""), P, y);
+      if (l.right) {
+        ctx.textAlign = "right";
+        ctx.font = "600 20px Kanit, sans-serif";
+        ctx.fillText(l.right, W - P, y);
+        ctx.textAlign = "left";
+      }
+      ctx.strokeStyle = "#EFEBE2"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(P, y + 12); ctx.lineTo(W - P, y + 12); ctx.stroke();
+      y += 38;
     });
-    return { ...it, qty: Math.round(q * 1000) / 1000 };
+    y += 10;
   });
-}
-/* ย้อนกลับผลของรายการเคลื่อนไหว (ใช้ตอนกดเลิกทำ) */
-function revertMoves(list, moves, prevQty) {
-  return list.map(it => {
-    const rel = moves.filter(m => m.itemId === it.id);
-    if (!rel.length) return it;
-    if (rel.some(m => m.type === "adj") && prevQty && prevQty[it.id] !== undefined)
-      return { ...it, qty: Number(prevQty[it.id]) || 0 };
-    let q = Number(it.qty) || 0;
-    rel.forEach(m => { q += m.type === "in" ? -Number(m.qty) : Number(m.qty); });
-    return { ...it, qty: Math.round(q * 1000) / 1000 };
-  });
+
+  if (opts.footer) {
+    ctx.fillStyle = "#F3F0E8"; ctx.fillRect(0, h - 74, W, 74);
+    ctx.fillStyle = "#5A6472"; ctx.font = "500 20px Kanit, sans-serif";
+    ctx.fillText(opts.footer, P, h - 30);
+  }
+  return c;
 }
 
-function undoDelta(list, mv) {
-  if (mv.type === "adj") return list;
-  return list.map(it => {
-    if (it.id !== mv.itemId) return it;
-    let q = Number(it.qty) || 0;
-    q += mv.type === "in" ? -Number(mv.qty) : Number(mv.qty);
-    return { ...it, qty: Math.round(q * 1000) / 1000 };
-  });
+async function shareCanvas(canvas, filename, say) {
+  const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+  const file = new File([blob], filename, { type:"image/png" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      await navigator.share({ files:[file] });
+      return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    say("คัดลอกรูปแล้ว ✓ วางในไลน์ได้เลย");
+    return;
+  } catch (e) {}
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  say("บันทึกรูปลงเครื่องแล้ว");
+}
+function copyText(t, say) {
+  navigator.clipboard.writeText(t).then(() => say("คัดลอกข้อความแล้ว ✓"), () => say("คัดลอกไม่ได้"));
 }
 
 /* ============================================================
@@ -373,28 +419,26 @@ function Sheet({ title, onClose, children }) {
         <div className="row" style={{ marginBottom:14 }}>
           <div style={{ fontWeight:600, fontSize:17, flex:1 }}>{title}</div>
           <button className="press" onClick={onClose}
-            style={{ width:34, height:34, borderRadius:999, background:"var(--tint)", fontSize:16 }}>✕</button>
+            style={{ width:34, height:34, borderRadius:999, background:"var(--soft)", fontSize:16 }}>✕</button>
         </div>
         {children}
       </div>
     </div>
   );
 }
-
-function Field({ label, children }) {
-  return <div style={{ marginBottom:12 }}><span className="lbl">{label}</span>{children}</div>;
+function Field({ label, hint, children }) {
+  return (
+    <div style={{ marginBottom:12 }}>
+      <span className="lbl">{label}{hint ? <span style={{ opacity:.7 }}> · {hint}</span> : null}</span>
+      {children}
+    </div>
+  );
 }
-
-function ItemThumb({ item, img }) {
-  if (img) return <img className="thumb" src={img} alt="" />;
-  return <div className="thumb">{item.emo || "📦"}</div>;
-}
-
-function StatCard({ label, value, sub, color }) {
+function Stat({ label, value, sub, color }) {
   return (
     <div className="card" style={{ padding:"12px 14px", flex:1, minWidth:0 }}>
       <div className="lbl" style={{ marginBottom:2 }}>{label}</div>
-      <div className="big" style={{ color: color || "var(--navy)" }}>{value}</div>
+      <div style={{ fontSize:24, fontWeight:600, color: color || "var(--head)", lineHeight:1.15 }}>{value}</div>
       {sub ? <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{sub}</div> : null}
     </div>
   );
@@ -405,6 +449,7 @@ function StatCard({ label, value, sub, color }) {
    ============================================================ */
 function App() {
   const [booting, setBooting] = useState(true);
+  const [online, setOnline] = useState(false);
   const [shops, setShops] = useState([]);
   const [shopId, setShopId] = useState(LS.get("ps_shop") || "");
   const [role, setRole] = useState(LS.get("ps_role") || "staff");
@@ -415,41 +460,46 @@ function App() {
   const [cats, setCats] = useState(DEFAULT_CATS);
   const [units, setUnits] = useState(DEFAULT_UNITS);
   const [photos, setPhotos] = useState({});
-  const [moves, setMoves] = useState({});          // { "YYYY-MM": [ ... ] }
+  const [counts, setCounts] = useState({});   // { "YYYY-MM": [session,...] }
+  const [orders, setOrders] = useState({});
   const [loadingShop, setLoadingShop] = useState(false);
   const [toast, setToast] = useState("");
-  const [online, setOnline] = useState(false);
+  const [sheet, setSheet] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
-  const [tick, setTick] = useState(0);
-  const [sheet, setSheet] = useState(null);        // {type, data}
+  const [orderDraft, setOrderDraft] = useState({});   // { itemId: qty }
 
   const isOwner = role === "owner";
   const shop = useMemo(() => shops.find(s => s.id === shopId) || null, [shops, shopId]);
+  const say = m => { setToast(m); setTimeout(() => setToast(""), 2000); };
 
-  const say = m => { setToast(m); setTimeout(() => setToast(""), 1800); };
-
-  /* ---- boot: เฝ้าดูรายชื่อร้าน + ตั้งค่า ---- */
+  /* ---- ธีมตามร้าน ---- */
   useEffect(() => {
-    const u1 = watchDoc("stockApp/shops", d => {
-      setShops((d && d.list) || []);
-      setOnline(true);
-      setBooting(false);
-    });
+    const c = colorOf(shop && shop.color);
+    const b = BGS.find(x => x.k === (shop && shop.bg));
+    document.documentElement.style.setProperty("--head", c.head);
+    document.documentElement.style.setProperty("--tint", c.tint);
+    document.body.style.backgroundImage = (b && b.f) ? `url('${b.f}')` : "none";
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", c.head);
+  }, [shop]);
+
+  /* ---- boot ---- */
+  useEffect(() => {
+    const u1 = watchDoc("stockApp/shops", d => { setShops((d && d.list) || []); setOnline(true); setBooting(false); });
     const u2 = watchDoc("stockApp/config", d => { if (d) setCfg({ ownerPin: d.ownerPin || "1234" }); });
     const t = setTimeout(() => setBooting(false), 6000);
     return () => { u1(); u2(); clearTimeout(t); };
   }, []);
 
-  /* เลือกร้านแรกอัตโนมัติ */
   useEffect(() => {
     if (shops.length && !shops.some(x => x.id === shopId)) setShopId(shops[0].id);
   }, [shops]);
 
-  /* ---- เฝ้าดูข้อมูลร้านที่เลือก ---- */
+  /* ---- ข้อมูลร้าน ---- */
   useEffect(() => {
     if (!shopId) return;
-    setLoadingShop(true);
-    setMoves({});
+    setLoadingShop(true); setCounts({}); setOrders({}); setOrderDraft({});
+    setUndoStack(readUndo(shopId));
     const mk = monthOf(today());
     const u1 = watchDoc("stockItems/" + shopId, d => {
       setItems((d && d.items) || []);
@@ -458,44 +508,40 @@ function App() {
       setLoadingShop(false);
     });
     const u2 = watchDoc("stockPhotos/" + shopId, d => setPhotos((d && d.p) || {}));
-    const u3 = watchDoc(`stockMoves/${shopId}_${mk}`, d =>
-      setMoves(prev => ({ ...prev, [mk]: (d && d.moves) || [] })));
+    const u3 = watchDoc(`stockCounts/${shopId}_${mk}`, d => setCounts(p => ({ ...p, [mk]: (d && d.list) || [] })));
+    const u4 = watchDoc(`stockOrders/${shopId}_${mk}`, d => setOrders(p => ({ ...p, [mk]: (d && d.list) || [] })));
+    (async () => {
+      for (const m of lastMonths(3).slice(1)) {
+        const c = await getDoc(`stockCounts/${shopId}_${m}`);
+        setCounts(p => ({ ...p, [m]: (c && c.list) || [] }));
+      }
+    })();
     LS.set("ps_shop", shopId);
-    return () => { u1(); u2(); u3(); };
+    return () => { u1(); u2(); u3(); u4(); };
   }, [shopId]);
 
-  /* ---- ปุ่มเลิกทำ (เก็บในเครื่อง 20 ครั้ง / หมดอายุ 1 ชม.) ---- */
-  const UNDO_MAX = 20, UNDO_TTL = 60 * 60 * 1000;
-  const undoKey = sid => "ps_undo:" + sid;
+  /* ---- undo ---- */
+  const UNDO_TTL = 60 * 60 * 1000;
   const readUndo = sid => {
-    try { return (JSON.parse(LS.get(undoKey(sid)) || "[]")).filter(e => Date.now() - e.ts < UNDO_TTL); }
+    try { return (JSON.parse(LS.get("ps_undo:" + sid) || "[]")).filter(e => Date.now() - e.ts < UNDO_TTL); }
     catch (e) { return []; }
   };
-  const writeUndo = (sid, arr) => { LS.set(undoKey(sid), JSON.stringify(arr)); setUndoStack(arr); };
-  const pushUndo = entry => {
-    if (!shopId) return;
-    writeUndo(shopId, [{ ...entry, id: uid(), ts: Date.now() }, ...readUndo(shopId)].slice(0, UNDO_MAX));
-  };
-
-  useEffect(() => { setUndoStack(readUndo(shopId)); }, [shopId]);
+  const writeUndo = (sid, arr) => { LS.set("ps_undo:" + sid, JSON.stringify(arr)); setUndoStack(arr); };
+  const pushUndo = entry => { if (shopId) writeUndo(shopId, [{ ...entry, id:uid(), ts:Date.now() }, ...readUndo(shopId)].slice(0, 20)); };
   useEffect(() => {
-    const t = setInterval(() => { setTick(x => x + 1); setUndoStack(readUndo(shopId)); }, 60000);
+    const t = setInterval(() => setUndoStack(readUndo(shopId)), 60000);
     return () => clearInterval(t);
   }, [shopId]);
 
-  /* ---- writers (transaction ทุกครั้ง) ---- */
-  const saveItems = async (nextItems, nextCats, nextUnits) => {
-    if (nextItems) setItems(nextItems);
+  /* ---- writers ---- */
+  const saveMeta = async (nextCats, nextUnits) => {
     if (nextCats) setCats(nextCats);
     if (nextUnits) setUnits(nextUnits);
     await txDoc("stockItems/" + shopId, cur => ({
-      ...cur,
-      items: nextItems || cur.items || [],
-      cats:  nextCats  || cur.cats  || cats,
-      units: nextUnits || cur.units || units
+      ...cur, items: cur.items || items,
+      cats: nextCats || cur.cats || cats, units: nextUnits || cur.units || units
     }));
   };
-
   const upsertItem = async (it, undoLabel) => {
     const before = items.find(x => x.id === it.id) || null;
     setItems(prev => prev.some(x => x.id === it.id) ? prev.map(x => x.id === it.id ? it : x) : [...prev, it]);
@@ -507,141 +553,60 @@ function App() {
     });
     if (undoLabel) pushUndo({ kind:"item", label:undoLabel, before, after:it });
   };
-
   const removeItem = async (id, undoLabel) => {
     const before = items.find(x => x.id === id) || null;
-    const ph = photos[id] || null;
     setItems(prev => prev.filter(x => x.id !== id));
     await txDoc("stockItems/" + shopId, cur => ({ ...cur, items: (cur.items || []).filter(x => x.id !== id) }));
-    if (undoLabel && before) pushUndo({ kind:"itemDel", label:undoLabel, item:before, photo:ph });
+    if (undoLabel && before) pushUndo({ kind:"itemDel", label:undoLabel, item:before, photo:photos[id] || null });
   };
-
-  const savePhoto = async (itemId, dataUrl) => {
+  const savePhoto = async (key, dataUrl) => {
     await txDoc("stockPhotos/" + shopId, cur => {
       const p = { ...(cur.p || {}) };
-      if (dataUrl) p[itemId] = dataUrl; else delete p[itemId];
+      if (dataUrl) p[key] = dataUrl; else delete p[key];
       return { p };
     });
   };
+  const saveShops = async list => { setShops(list); await txDoc("stockApp/shops", () => ({ list })); };
 
-  const saveShops = async list => {
-    setShops(list);
-    await txDoc("stockApp/shops", () => ({ list }));
+  const saveCount = async session => {
+    const mk = monthOf(session.date);
+    setCounts(p => ({ ...p, [mk]: [session, ...(p[mk] || [])] }));
+    await txDoc(`stockCounts/${shopId}_${mk}`, cur => ({ list: [session, ...(cur.list || [])] }));
+    pushUndo({ kind:"count", label:`บันทึกการนับ ${thDate(session.date)}`, mk, sid:session.id });
   };
-
-  const ensureMonth = async mk => {
-    if (moves[mk]) return moves[mk];
-    const m = await getDoc(`stockMoves/${shopId}_${mk}`);
-    const arr = (m && m.moves) || [];
-    setMoves(prev => ({ ...prev, [mk]: arr }));
-    return arr;
+  const saveOrder = async order => {
+    const mk = monthOf(order.date);
+    setOrders(p => ({ ...p, [mk]: [order, ...(p[mk] || [])] }));
+    await txDoc(`stockOrders/${shopId}_${mk}`, cur => ({ list: [order, ...(cur.list || [])] }));
+    pushUndo({ kind:"order", label:`บันทึกใบสั่งของ ${thDate(order.date)}`, mk, sid:order.id });
   };
-
-  const addMoves = async (list, undoLabel) => {
-    if (!list.length) return;
-    const prevQty = {};
-    list.forEach(mv => {
-      const it = items.find(x => x.id === mv.itemId);
-      if (it && prevQty[mv.itemId] === undefined) prevQty[mv.itemId] = Number(it.qty) || 0;
-    });
-    const byMonth = {};
-    list.forEach(mv => { const k = monthOf(mv.date); (byMonth[k] = byMonth[k] || []).push(mv); });
-    setItems(prev => applyDelta(prev, list));
-    setMoves(prev => {
-      const n = { ...prev };
-      Object.keys(byMonth).forEach(k => { n[k] = [...byMonth[k], ...(n[k] || [])]; });
-      return n;
-    });
-    await txDoc("stockItems/" + shopId, cur => ({
-      ...cur,
-      items: applyDelta(cur.items || [], list),
-      cats: cur.cats || cats, units: cur.units || units
-    }));
-    for (const k of Object.keys(byMonth)) await appendMoves(`stockMoves/${shopId}_${k}`, byMonth[k]);
-
-    let label = undoLabel;
-    if (!label) {
-      if (list.length === 1) {
-        const it = items.find(x => x.id === list[0].itemId);
-        label = `${MOVE_LABEL[list[0].type]} ${it ? it.name : ""} ${nf(list[0].qty)}`;
-      } else label = `บันทึก ${list.length} รายการ`;
-    }
-    pushUndo({ kind:"moves", label, moves:list, prevQty });
-  };
-
-  const delMove = async mv => {
-    const k = monthOf(mv.date);
-    setMoves(prev => ({ ...prev, [k]: (prev[k] || []).filter(x => x.id !== mv.id) }));
-    setItems(prev => undoDelta(prev, mv));
-    await txDoc("stockItems/" + shopId, cur => ({ ...cur, items: undoDelta(cur.items || [], mv) }));
-    await removeMoveDoc(`stockMoves/${shopId}_${k}`, mv);
-    const it = items.find(x => x.id === mv.itemId);
-    pushUndo({ kind:"delMove", label:`ลบประวัติ ${it ? it.name : ""}`, mv });
+  const delRecord = async (type, mk, id) => {
+    const path = `${type === "count" ? "stockCounts" : "stockOrders"}/${shopId}_${mk}`;
+    const setter = type === "count" ? setCounts : setOrders;
+    setter(p => ({ ...p, [mk]: (p[mk] || []).filter(x => x.id !== id) }));
+    await txDoc(path, cur => ({ list: (cur.list || []).filter(x => x.id !== id) }));
     say("ลบแล้ว");
   };
+  const loadMonth = async (type, mk) => {
+    const store = type === "count" ? counts : orders;
+    if (store[mk]) return;
+    const d = await getDoc(`${type === "count" ? "stockCounts" : "stockOrders"}/${shopId}_${mk}`);
+    (type === "count" ? setCounts : setOrders)(p => ({ ...p, [mk]: (d && d.list) || [] }));
+  };
 
-  /* ---- เลิกทำรายการล่าสุด ---- */
   const undoLast = async () => {
     const stack = readUndo(shopId);
     if (!stack.length) { say("ไม่มีอะไรให้ย้อนกลับ"); return; }
     const e = stack[0];
     if (!confirm("เลิกทำ:\n" + e.label + "\n\nยืนยัน?")) return;
     try {
-      if (e.kind === "moves") {
-        setItems(prev => revertMoves(prev, e.moves, e.prevQty));
-        const ids = e.moves.map(m => m.id);
-        setMoves(prev => {
-          const n = { ...prev };
-          Object.keys(n).forEach(k => { n[k] = (n[k] || []).filter(x => !ids.includes(x.id)); });
-          return n;
-        });
-        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items: revertMoves(cur.items || [], e.moves, e.prevQty) }));
-        const byMonth = {};
-        e.moves.forEach(mv => { const k = monthOf(mv.date); (byMonth[k] = byMonth[k] || []).push(mv); });
-        for (const k of Object.keys(byMonth))
-          for (const mv of byMonth[k]) await removeMoveDoc(`stockMoves/${shopId}_${k}`, mv);
-      } else if (e.kind === "delMove") {
-        setItems(prev => applyDelta(prev, [e.mv]));
-        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items: applyDelta(cur.items || [], [e.mv]) }));
-        await appendMoves(`stockMoves/${shopId}_${monthOf(e.mv.date)}`, [e.mv]);
-        setMoves(prev => ({ ...prev, [monthOf(e.mv.date)]: [e.mv, ...(prev[monthOf(e.mv.date)] || [])] }));
-      } else if (e.kind === "item") {
-        if (e.before) await upsertItem(e.before, null);
-        else await removeItem(e.after.id, null);
-      } else if (e.kind === "itemDel") {
-        await upsertItem(e.item, null);
-        if (e.photo) await savePhoto(e.item.id, e.photo);
-      }
+      if (e.kind === "item") { if (e.before) await upsertItem(e.before, null); else await removeItem(e.after.id, null); }
+      else if (e.kind === "itemDel") { await upsertItem(e.item, null); if (e.photo) await savePhoto(e.item.id, e.photo); }
+      else if (e.kind === "count") await delRecord("count", e.mk, e.sid);
+      else if (e.kind === "order") await delRecord("order", e.mk, e.sid);
       writeUndo(shopId, stack.slice(1));
       say("ย้อนกลับแล้ว ✓");
     } catch (err) { alert("ย้อนกลับไม่สำเร็จ: " + err.message); }
-  };
-
-  /* ---- ลบข้อมูลตัวอย่าง ---- */
-  const cleanupSeed = async () => {
-    if (!confirm("ลบเฉพาะข้อมูลตัวอย่างที่ระบบสร้างให้\nรายการที่คุณเพิ่มเองจะไม่ถูกลบ\n\nยืนยัน?")) return;
-    say("กำลังลบ…");
-    const keep = [];
-    for (const sh of shops) {
-      const d = await getDoc("stockItems/" + sh.id);
-      const all = (d && d.items) || [];
-      const mine = all.filter(x => !x.seed);
-      if (all.length !== mine.length)
-        await txDoc("stockItems/" + sh.id, cur => ({ ...cur, items: mine }));
-      if (sh.seed && !mine.length) {
-        await setDoc("stockPhotos/" + sh.id, { p:{} });
-        for (let i = 0; i < 18; i++) {
-          const d2 = new Date(); d2.setMonth(d2.getMonth() - i);
-          const mk = `${d2.getFullYear()}-${pad(d2.getMonth() + 1)}`;
-          const mv = await getDoc(`stockMoves/${sh.id}_${mk}`);
-          if (mv && (mv.moves || []).length) await setDoc(`stockMoves/${sh.id}_${mk}`, { moves: [] });
-        }
-      } else keep.push(sh);
-    }
-    await saveShops(keep);
-    setShopId(keep.length ? keep[0].id : "");
-    writeUndo(shopId, []);
-    say("ลบข้อมูลตัวอย่างแล้ว ✓");
   };
 
   const askOwner = () => {
@@ -653,7 +618,7 @@ function App() {
   };
 
   const loadSeed = async () => {
-    if (shops.length && !confirm("เพิ่มร้านตัวอย่างทับของเดิม? (ร้านที่มีอยู่จะไม่ถูกลบ)")) return;
+    if (shops.length && !confirm("เพิ่มร้านตัวอย่าง? ร้านเดิมไม่ถูกลบ")) return;
     say("กำลังสร้าง…");
     const merged = shops.slice();
     for (const s of SEED.shops) {
@@ -665,60 +630,82 @@ function App() {
     setShopId(merged[0].id);
     say("โหลดข้อมูลตัวอย่างแล้ว ✓");
   };
-
+  const cleanupSeed = async () => {
+    if (!confirm("ลบเฉพาะข้อมูลตัวอย่างที่ระบบสร้างให้\nรายการที่คุณเพิ่มเองจะไม่ถูกลบ\n\nยืนยัน?")) return;
+    say("กำลังลบ…");
+    const keep = [];
+    for (const sh of shops) {
+      const d = await getDoc("stockItems/" + sh.id);
+      const all = (d && d.items) || [];
+      const mine = all.filter(x => !x.seed);
+      if (all.length !== mine.length) await txDoc("stockItems/" + sh.id, cur => ({ ...cur, items: mine }));
+      if (sh.seed && !mine.length) await setDoc("stockPhotos/" + sh.id, { p:{} });
+      else keep.push(sh);
+    }
+    await saveShops(keep);
+    setShopId(keep.length ? keep[0].id : "");
+    writeUndo(shopId, []);
+    say("ลบข้อมูลตัวอย่างแล้ว ✓");
+  };
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ shop:shopId, cats, units, items }, null, 1)], { type:"application/json" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `stock-backup-${shopId}-${today()}.json`;
-    a.click();
+    a.href = URL.createObjectURL(blob); a.download = `stock-${shopId}-${today()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   };
-
   const importJson = file => {
     const fr = new FileReader();
     fr.onload = async () => {
       try {
         const d = JSON.parse(fr.result);
         if (!Array.isArray(d.items)) throw new Error("ไฟล์ไม่ถูกต้อง");
-        if (!confirm(`นำเข้า ${d.items.length} รายการ ทับข้อมูลร้าน ${shop ? shop.name : ""} ?`)) return;
-        await saveItems(d.items, d.cats || cats, d.units || units);
+        if (!confirm(`นำเข้า ${d.items.length} รายการ ทับข้อมูลร้านนี้?`)) return;
+        setItems(d.items);
+        await txDoc("stockItems/" + shopId, cur => ({ ...cur, items:d.items, cats:d.cats || cats, units:d.units || units }));
         say("นำเข้าแล้ว ✓");
       } catch (e) { alert("นำเข้าไม่สำเร็จ: " + e.message); }
     };
     fr.readAsText(file);
   };
 
-  /* ---- derived ---- */
-  const lowItems = useMemo(
-    () => items.filter(i => Number(i.min) > 0 && Number(i.qty) <= Number(i.min)),
-    [items]
-  );
-  const stockValue = useMemo(
-    () => items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.cost) || 0), 0),
-    [items]
-  );
-  const expSoon = useMemo(
-    () => items.filter(i => i.exp && daysLeft(i.exp) !== null && daysLeft(i.exp) <= 7),
-    [items]
-  );
+  /* ---- ยอดล่าสุดจากการนับ ---- */
+  const latest = useMemo(() => {
+    const all = Object.values(counts).flat().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const map = {};
+    all.forEach(c => (c.lines || []).forEach(l => {
+      if (map[l.itemId] === undefined) map[l.itemId] = { qty:Number(l.qty), date:c.date };
+    }));
+    return { map, last: all[0] || null, all };
+  }, [counts]);
 
-  /* ---- screens ---- */
+  const lowItems = useMemo(() => items.filter(i => {
+    const q = latest.map[i.id];
+    return Number(i.min) > 0 && q !== undefined && q.qty <= Number(i.min);
+  }), [items, latest]);
+
+  const neverCounted = useMemo(() => items.filter(i => latest.map[i.id] === undefined), [items, latest]);
+
+  const addToOrder = (id, qty) => {
+    setOrderDraft(p => ({ ...p, [id]: qty !== undefined ? qty : (p[id] || 0) + 1 }));
+    say("ใส่ในรายการสั่งของแล้ว");
+  };
+
   if (booting) return <div className="empty" style={{ paddingTop:120 }}>กำลังโหลด…</div>;
 
   const TABS = [
-    { k:"stock",  ic:"📦", t:"คลัง" },
-    { k:"move",   ic:"🔁", t:"รับ-เบิก" },
+    { k:"stock",  ic:"📦", t:"รายการของ" },
     { k:"count",  ic:"📋", t:"นับสต๊อก" },
-    { k:"report", ic:"📊", t:"สรุป" },
+    { k:"order",  ic:"🛒", t:"สั่งของ" },
+    { k:"hist",   ic:"🕘", t:"ประวัติ" },
     { k:"setup",  ic:"⚙️", t:"ตั้งค่า" },
   ];
+  const orderCount = Object.values(orderDraft).filter(v => Number(v) > 0).length;
 
   return (
-    <div style={{ paddingBottom:78 }}>
-      <Header shops={shops} shop={shop} setShopId={setShopId} isOwner={isOwner}
-        onRole={askOwner} stockValue={stockValue} low={lowItems.length} items={items.length}
-        undoCount={undoStack.length} onUndo={undoLast} onHelp={() => setSheet({ type:"help" })} />
+    <div style={{ paddingBottom:80 }}>
+      <Header shop={shop} shops={shops} setShopId={setShopId} isOwner={isOwner} onRole={askOwner}
+        onHelp={() => setSheet({ type:"help" })} onUndo={undoLast} undoCount={undoStack.length}
+        items={items.length} low={lowItems.length} lastDate={latest.last ? latest.last.date : null} />
 
       {!LOCAL_MODE ? (
         <div style={{ display:"flex", justifyContent:"center", marginTop:8 }}>
@@ -727,17 +714,15 @@ function App() {
             {online ? "🟢 ออนไลน์ · ซิงก์ทุกเครื่องอัตโนมัติ" : "⚪ กำลังเชื่อมต่อ…"}
           </span>
         </div>
-      ) : null}
-
-      {LOCAL_MODE ? (
+      ) : (
         <div style={{ margin:"10px 16px 0", background:"#FFF3E2", border:"1px solid #F0D9B4",
           borderRadius:14, padding:"9px 13px", fontSize:12.5, lineHeight:1.55 }}>
-          🧪 <b>โหมดทดลอง</b> — ข้อมูลเก็บในเครื่องนี้เท่านั้น ยังไม่ซิงก์ข้ามอุปกรณ์<br/>
+          🧪 <b>โหมดทดลอง</b> — ข้อมูลเก็บในเครื่องนี้เท่านั้น<br/>
           สาเหตุ: ยังไม่พบไฟล์ <b>firebase-config.js</b> หรือยังไม่ได้ใส่ค่าในไฟล์นั้น
         </div>
-      ) : null}
+      )}
 
-      {loadingShop ? <div className="empty">กำลังโหลดข้อมูลร้าน…</div> : null}
+      {loadingShop ? <div className="empty">กำลังโหลด…</div> : null}
 
       {!shops.length ? (
         <div style={{ padding:16 }}>
@@ -745,38 +730,41 @@ function App() {
             <img className="emptypic" src="empty-box.jpg" alt="" />
             <div style={{ fontWeight:600, margin:"6px 0 4px" }}>ยังไม่มีร้าน</div>
             <div style={{ color:"var(--muted)", fontSize:13, marginBottom:14 }}>
-              เริ่มด้วยชุดตัวอย่าง 5 ร้าน (Otteri · Teddy 1 · Teddy 2 · สปา · Owl Cha)<br/>พร้อมรายการของและราคาทุนจริง
+              เริ่มด้วยชุดตัวอย่าง 5 ร้าน พร้อมรายการของและราคา
             </div>
-            <button className="btn gold press" style={{ width:"100%", marginBottom:8 }} onClick={loadSeed}>
-              ✨ โหลดข้อมูลตัวอย่าง
-            </button>
-            <button className="btn ghost press" style={{ width:"100%" }} onClick={() => setSheet({ type:"shop", data:null })}>
-              ➕ เพิ่มร้านเอง
-            </button>
+            <button className="btn gold press" style={{ width:"100%", marginBottom:8 }} onClick={loadSeed}>✨ โหลดข้อมูลตัวอย่าง</button>
+            <button className="btn ghost press" style={{ width:"100%" }} onClick={() => setSheet({ type:"shop", data:null })}>➕ เพิ่มร้านเอง</button>
           </div>
         </div>
       ) : (
         <>
-          {tab === "stock"  && <TabStock  {...{ items, cats, photos, lowItems, expSoon, isOwner, setSheet, say }} />}
-          {tab === "move"   && <TabMove   {...{ items, photos, moves, addMoves, delMove, ensureMonth, isOwner, say }} />}
-          {tab === "count"  && <TabCount  {...{ items, cats, addMoves, say }} />}
-          {tab === "report" && <TabReport {...{ items, cats, moves, ensureMonth, stockValue, lowItems, shop, isOwner }} />}
-          {tab === "setup"  && <TabSetup  {...{ shops, shop, saveShops, setShopId, cats, units, items, saveItems, isOwner, cfg, setCfg, setSheet, say, loadSeed, exportJson, importJson, cleanupSeed }} />}
+          {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, say }} />}
+          {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, saveCount, say, setTab }} />}
+          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, saveOrder, say }} />}
+          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, loadMonth, delRecord, isOwner, say }} />}
+          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, exportJson, importJson }} />}
         </>
       )}
 
       <div className="nav">
         {TABS.map(x => (
           <button key={x.k} className={tab === x.k ? "on" : ""} onClick={() => setTab(x.k)}>
-            <span className="ic">{x.ic}</span>{x.t}
+            <span className="ic" style={{ position:"relative" }}>
+              {x.ic}
+              {x.k === "order" && orderCount ? (
+                <span style={{ position:"absolute", top:-4, right:-10, background:"var(--red)", color:"#fff",
+                  fontSize:9, minWidth:15, height:15, borderRadius:999, display:"flex", alignItems:"center",
+                  justifyContent:"center", padding:"0 3px" }}>{orderCount}</span>
+              ) : null}
+            </span>
+            {x.t}
           </button>
         ))}
       </div>
 
       {sheet && sheet.type === "item" &&
-        <ItemSheet item={sheet.data} cats={cats} units={units} items={items}
-          photo={sheet.data ? photos[sheet.data.id] : null}
-          isOwner={isOwner} onClose={() => setSheet(null)}
+        <ItemSheet item={sheet.data} cats={cats} units={units} items={items} isOwner={isOwner}
+          photo={sheet.data ? photos[sheet.data.id] : null} onClose={() => setSheet(null)}
           onSave={async (it, img) => {
             await upsertItem(it, (items.some(x => x.id === it.id) ? "แก้ไข " : "เพิ่ม ") + it.name);
             if (img !== undefined) await savePhoto(it.id, img);
@@ -789,15 +777,14 @@ function App() {
             setSheet(null); say("ลบแล้ว");
           }} />}
 
-      {sheet && sheet.type === "help" &&
-        <HelpSheet isOwner={isOwner} onClose={() => setSheet(null)} />}
-
-      {sheet && sheet.type === "quick" &&
-        <QuickMove item={sheet.data} onClose={() => setSheet(null)}
-          onSave={async mv => { await addMoves([mv]); setSheet(null); say("บันทึกแล้ว ✓"); }} />}
+      {sheet && sheet.type === "view" &&
+        <ItemView item={sheet.data} photo={photos[sheet.data.id]} latest={latest.map[sheet.data.id]}
+          isOwner={isOwner} onClose={() => setSheet(null)}
+          onEdit={() => setSheet({ type:"item", data:sheet.data })}
+          onOrder={() => { addToOrder(sheet.data.id); setSheet(null); }} />}
 
       {sheet && sheet.type === "shop" &&
-        <ShopSheet shop={sheet.data} onClose={() => setSheet(null)}
+        <ShopSheet shop={sheet.data} shops={shops} onClose={() => setSheet(null)}
           onSave={async sh => {
             const exists = shops.some(x => x.id === sh.id);
             await saveShops(exists ? shops.map(x => x.id === sh.id ? sh : x) : [...shops, sh]);
@@ -805,16 +792,17 @@ function App() {
             setSheet(null); say("บันทึกแล้ว ✓");
           }}
           onDelete={async sh => {
-            if (!confirm("ลบร้าน " + sh.name + " ? (ข้อมูลสต๊อกยังอยู่ในระบบ)")) return;
+            if (!confirm("ลบร้าน " + sh.name + " ?")) return;
             const next = shops.filter(x => x.id !== sh.id);
-            await saveShops(next);
-            setShopId(next.length ? next[0].id : "");
-            setSheet(null);
+            await saveShops(next); setShopId(next.length ? next[0].id : ""); setSheet(null);
           }} />}
 
+      {sheet && sheet.type === "help" && <HelpSheet isOwner={isOwner} onClose={() => setSheet(null)} />}
+
       {toast ? (
-        <div style={{ position:"fixed", bottom:92, left:0, right:0, display:"flex", justifyContent:"center", zIndex:70 }}>
-          <div style={{ background:"var(--navy)", color:"#fff", padding:"9px 18px", borderRadius:999, fontSize:13.5 }}>{toast}</div>
+        <div style={{ position:"fixed", bottom:94, left:0, right:0, display:"flex", justifyContent:"center", zIndex:70 }}>
+          <div style={{ background:"var(--head)", color:"#fff", padding:"9px 18px", borderRadius:999, fontSize:13.5,
+            maxWidth:"85%", textAlign:"center" }}>{toast}</div>
         </div>
       ) : null}
     </div>
@@ -822,23 +810,25 @@ function App() {
 }
 
 /* ---------- Header ---------- */
-function Header({ shops, shop, setShopId, isOwner, onRole, stockValue, low, items, undoCount, onUndo, onHelp }) {
+function Header({ shop, shops, setShopId, isOwner, onRole, onHelp, onUndo, undoCount, items, low, lastDate }) {
   return (
     <div className="hdr">
       <div className="row" style={{ gap:6 }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:11, opacity:.72, letterSpacing:1 }}>PLP STOCK</div>
-          <div style={{ fontSize:19, fontWeight:600 }}>{shop ? shop.name : "เช็คสต๊อก"}</div>
+          <div style={{ fontSize:19, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            {shop ? `${shop.emo || "🏪"} ${shop.name}` : "เช็คสต๊อก"}
+          </div>
         </div>
-        <button className="press" onClick={onHelp} title="วิธีใช้"
-          style={{ background:"rgba(255,255,255,.14)", borderRadius:999, width:32, height:32, color:"#fff", fontSize:15 }}>❓</button>
+        <button className="press" onClick={onHelp}
+          style={{ background:"rgba(255,255,255,.16)", borderRadius:999, width:32, height:32, color:"#fff" }}>❓</button>
         <button className="press" onClick={onUndo} disabled={!undoCount}
-          style={{ background: undoCount ? "rgba(198,139,74,.45)" : "rgba(255,255,255,.08)", borderRadius:999,
+          style={{ background: undoCount ? "rgba(255,255,255,.3)" : "rgba(255,255,255,.08)", borderRadius:999,
             padding:"6px 11px", fontSize:13, color:"#fff", opacity: undoCount ? 1 : .45 }}>
           ↩︎{undoCount ? " " + undoCount : ""}
         </button>
         <button className="press" onClick={onRole}
-          style={{ background:"rgba(255,255,255,.14)", borderRadius:999, padding:"6px 11px", fontSize:12.5, color:"#fff" }}>
+          style={{ background:"rgba(255,255,255,.16)", borderRadius:999, padding:"6px 11px", fontSize:13, color:"#fff" }}>
           {isOwner ? "👑" : "👤"}
         </button>
       </div>
@@ -850,8 +840,9 @@ function Header({ shops, shop, setShopId, isOwner, onRole, stockValue, low, item
             return (
               <button key={s.id} className="press" onClick={() => setShopId(s.id)}
                 style={{ display:"flex", alignItems:"center", gap:7, padding:"7px 13px", borderRadius:999,
-                  background: on ? "#fff" : "rgba(255,255,255,.12)", color: on ? "var(--navy)" : "#fff",
-                  fontWeight: on ? 500 : 400, fontSize:13, whiteSpace:"nowrap", flex:"none" }}>
+                  background: on ? "#fff" : "rgba(255,255,255,.14)", color: on ? colorOf(s.color).head : "#fff",
+                  fontWeight: on ? 500 : 400, fontSize:13, whiteSpace:"nowrap", flex:"none",
+                  border: on ? "none" : "1px solid rgba(255,255,255,.25)" }}>
                 <span>{s.emo || "🏪"}</span>{s.name}
               </button>
             );
@@ -860,27 +851,25 @@ function Header({ shops, shop, setShopId, isOwner, onRole, stockValue, low, item
       ) : null}
 
       <div style={{ display:"flex", gap:8, marginTop:14 }}>
-        <div style={{ flex:1, background:"rgba(255,255,255,.11)", borderRadius:14, padding:"9px 12px" }}>
-          <div style={{ fontSize:10.5, opacity:.7 }}>รายการทั้งหมด</div>
+        <div style={{ flex:1, background:"rgba(255,255,255,.13)", borderRadius:14, padding:"9px 12px" }}>
+          <div style={{ fontSize:10.5, opacity:.75 }}>รายการทั้งหมด</div>
           <div style={{ fontSize:19, fontWeight:600 }}>{items}</div>
         </div>
-        <div style={{ flex:1, background: low ? "rgba(220,90,100,.28)" : "rgba(255,255,255,.11)", borderRadius:14, padding:"9px 12px" }}>
-          <div style={{ fontSize:10.5, opacity:.75 }}>ต้องสั่งซื้อ</div>
+        <div style={{ flex:1, background: low ? "rgba(220,90,100,.35)" : "rgba(255,255,255,.13)", borderRadius:14, padding:"9px 12px" }}>
+          <div style={{ fontSize:10.5, opacity:.8 }}>ต้องสั่งซื้อ</div>
           <div style={{ fontSize:19, fontWeight:600 }}>{low}</div>
         </div>
-        {isOwner ? (
-          <div style={{ flex:1.3, background:"rgba(198,139,74,.32)", borderRadius:14, padding:"9px 12px" }}>
-            <div style={{ fontSize:10.5, opacity:.8 }}>มูลค่าสต๊อก</div>
-            <div style={{ fontSize:19, fontWeight:600 }}>{money(stockValue)}</div>
-          </div>
-        ) : null}
+        <div style={{ flex:1.2, background:"rgba(255,255,255,.13)", borderRadius:14, padding:"9px 12px" }}>
+          <div style={{ fontSize:10.5, opacity:.75 }}>นับล่าสุด</div>
+          <div style={{ fontSize:15, fontWeight:600, marginTop:2 }}>{lastDate ? thDate(lastDate) : "ยังไม่เคยนับ"}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ---------- TAB: คลัง ---------- */
-function TabStock({ items, cats, photos, lowItems, expSoon, isOwner, setSheet, say }) {
+/* ---------- TAB 1: รายการของ ---------- */
+function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, say }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("*");
   const [onlyLow, setOnlyLow] = useState(false);
@@ -888,28 +877,23 @@ function TabStock({ items, cats, photos, lowItems, expSoon, isOwner, setSheet, s
   const list = useMemo(() => {
     let r = items.slice();
     if (cat !== "*") r = r.filter(i => i.cat === cat);
-    if (q.trim()) { const s = q.trim().toLowerCase(); r = r.filter(i => (i.name || "").toLowerCase().includes(s)); }
-    if (onlyLow) r = r.filter(i => Number(i.min) > 0 && Number(i.qty) <= Number(i.min));
+    if (onlyLow) r = r.filter(i => lowItems.some(x => x.id === i.id));
+    if (q.trim()) {
+      const s = q.trim().toLowerCase();
+      r = r.filter(i => [i.name, i.brand, i.detail, i.vendor].join(" ").toLowerCase().includes(s));
+    }
     return r.sort((a, b) => (a.cat || "").localeCompare(b.cat || "", "th") || (a.name || "").localeCompare(b.name || "", "th"));
-  }, [items, q, cat, onlyLow]);
-
-  const copyOrder = () => {
-    if (!lowItems.length) { say("ไม่มีรายการต้องสั่ง"); return; }
-    const txt = "🛒 รายการต้องสั่งซื้อ\n" + lowItems
-      .map(i => `• ${i.name} — เหลือ ${nf(i.qty)} ${i.unit || ""} (เกณฑ์ ${nf(i.min)})`).join("\n");
-    navigator.clipboard.writeText(txt).then(() => say("คัดลอกแล้ว ✓"), () => say("คัดลอกไม่ได้"));
-  };
+  }, [items, q, cat, onlyLow, lowItems]);
 
   return (
     <div>
       <div style={{ padding:"14px 16px 6px" }}>
-        <input placeholder="🔍 ค้นหาชื่อของ…" value={q} onChange={e => setQ(e.target.value)} />
+        <input placeholder="🔍 ค้นหา ชื่อ / ยี่ห้อ / ร้านที่ซื้อ" value={q} onChange={e => setQ(e.target.value)} />
       </div>
       <div className="scroll-x">
         <button className={"chip press " + (cat === "*" && !onlyLow ? "on" : "")}
-          onClick={() => { setCat("*"); setOnlyLow(false); }}>ทั้งหมด</button>
-        <button className={"chip press " + (onlyLow ? "on" : "")}
-          onClick={() => { setOnlyLow(!onlyLow); setCat("*"); }}
+          onClick={() => { setCat("*"); setOnlyLow(false); }}>ทั้งหมด {items.length}</button>
+        <button className={"chip press " + (onlyLow ? "on" : "")} onClick={() => { setOnlyLow(!onlyLow); setCat("*"); }}
           style={ onlyLow ? { background:"var(--red)", borderColor:"var(--red)" } : {}}>🔴 ต้องสั่ง {lowItems.length}</button>
         {cats.map(c => (
           <button key={c} className={"chip press " + (cat === c ? "on" : "")}
@@ -917,48 +901,55 @@ function TabStock({ items, cats, photos, lowItems, expSoon, isOwner, setSheet, s
         ))}
       </div>
 
-      {expSoon.length ? (
-        <div style={{ margin:"4px 16px 10px", background:"#FFF3E2", border:"1px solid #F0D9B4",
-          borderRadius:14, padding:"10px 13px", fontSize:13 }}>
-          ⏳ ใกล้หมดอายุ {expSoon.length} รายการ — {expSoon.slice(0,3).map(i => i.name).join(", ")}
+      {neverCounted.length ? (
+        <div style={{ margin:"2px 16px 10px", background:"#FFF3E2", border:"1px solid #F0D9B4",
+          borderRadius:14, padding:"9px 13px", fontSize:12.5 }}>
+          ยังไม่เคยนับ {neverCounted.length} รายการ — ไปแท็บ 📋 นับสต๊อก เพื่อบันทึกยอดครั้งแรก
         </div>
       ) : null}
 
-      <div style={{ padding:"0 16px", display:"flex", gap:8, marginBottom:10 }}>
-        <button className="btn press" style={{ flex:1 }} onClick={() => setSheet({ type:"item", data:null })}>➕ เพิ่มของ</button>
-        <button className="btn ghost press" onClick={copyOrder}>📋 คัดลอกรายการสั่ง</button>
+      <div style={{ padding:"0 16px 10px" }}>
+        <button className="btn press" style={{ width:"100%" }} onClick={() => setSheet({ type:"item", data:null })}>➕ เพิ่มรายการใหม่</button>
       </div>
 
       {!list.length ? (
         <div className="empty">
           <img className="emptypic" src="empty-box.jpg" alt="" />
-          {q || cat !== "*" || onlyLow ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีของในคลัง กด ➕ เพิ่มของ ได้เลย"}
+          {items.length ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีของในคลัง กด ➕ เพิ่มรายการใหม่"}
         </div>
       ) : null}
 
       <div style={{ padding:"0 16px", display:"grid", gap:8 }}>
         {list.map(it => {
-          const low = Number(it.min) > 0 && Number(it.qty) <= Number(it.min);
-          const dl = it.exp ? daysLeft(it.exp) : null;
+          const l = latest.map[it.id];
+          const low = lowItems.some(x => x.id === it.id);
+          const trend = priceTrend(it);
           return (
-            <div key={it.id} className="card press" onClick={() => setSheet({ type:"quick", data:it })}
-              style={{ padding:11, display:"flex", gap:11, alignItems:"center",
-                borderColor: low ? "#EFC3C9" : "var(--line)" }}>
-              <ItemThumb item={it} img={photos[it.id]} />
+            <div key={it.id} className="card press" onClick={() => setSheet({ type:"view", data:it })}
+              style={{ padding:11, display:"flex", gap:11, alignItems:"center", borderColor: low ? "#EFC3C9" : "var(--line)" }}>
+              {photos[it.id] ? <img className="thumb" src={photos[it.id]} alt="" /> : <div className="thumb">📦</div>}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:500, fontSize:14.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{it.name}</div>
-                <div style={{ fontSize:11.5, color:"var(--muted)", display:"flex", gap:6, flexWrap:"wrap", marginTop:2 }}>
-                  <span>{it.cat || "ไม่ระบุหมวด"}</span>
-                  {isOwner && Number(it.cost) ? <span>· ทุน {money(it.cost)}/{it.unit}</span> : null}
-                  {dl !== null ? <span style={{ color: dl <= 7 ? "var(--red)" : "var(--muted)" }}>· หมดอายุ {thDate(it.exp)}</span> : null}
+                <div style={{ fontWeight:500, fontSize:14.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {it.name}
+                </div>
+                <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {[it.brand, it.vendor].filter(Boolean).join(" · ") || it.cat}
+                </div>
+                <div style={{ fontSize:12, marginTop:3 }}>
+                  <b style={{ color:"var(--head)" }}>{money(it.price)}</b>
+                  <span style={{ color:"var(--muted)" }}>/{it.unit}</span>
+                  {trend ? <span style={{ color: trend.up ? "var(--red)" : "var(--green)", marginLeft:6 }}>
+                    {trend.up ? "▲" : "▼"} {nf(Math.abs(trend.diff))}
+                  </span> : null}
                 </div>
               </div>
               <div style={{ textAlign:"right", flex:"none" }}>
-                <div style={{ fontSize:19, fontWeight:600, color: low ? "var(--red)" : "var(--navy)" }}>{nf(it.qty)}</div>
-                <div style={{ fontSize:11, color:"var(--muted)" }}>{it.unit || ""}</div>
+                <div style={{ fontSize:20, fontWeight:600, color: low ? "var(--red)" : "var(--head)" }}>
+                  {l ? nf(l.qty) : "—"}
+                </div>
+                <div style={{ fontSize:10.5, color:"var(--muted)" }}>{it.unit}</div>
+                {Number(it.min) > 0 ? <div style={{ fontSize:10, color:"var(--muted)" }}>ขั้นต่ำ {nf(it.min)}</div> : null}
               </div>
-              <button className="press" onClick={e => { e.stopPropagation(); setSheet({ type:"item", data:it }); }}
-                style={{ width:32, height:32, borderRadius:10, background:"var(--tint)", flex:"none" }}>✏️</button>
             </div>
           );
         })}
@@ -967,141 +958,193 @@ function TabStock({ items, cats, photos, lowItems, expSoon, isOwner, setSheet, s
   );
 }
 
-/* ---------- TAB: รับ-เบิก ---------- */
-function TabMove({ items, photos, moves, addMoves, delMove, ensureMonth, isOwner, say }) {
-  const [mk, setMk] = useState(monthOf(today()));
-  const [type, setType] = useState("out");
-  const [itemId, setItemId] = useState("");
-  const [qty, setQty] = useState("");
-  const [note, setNote] = useState("");
-  const [by, setBy] = useState(LS.get("ps_by") || "");
+function priceTrend(it) {
+  const ph = (it.ph || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (!ph.length) return null;
+  const prev = ph.find(x => Number(x.price) !== Number(it.price));
+  if (!prev) return null;
+  const diff = Number(it.price) - Number(prev.price);
+  if (!diff) return null;
+  return { up: diff > 0, diff, from: prev };
+}
 
-  useEffect(() => { ensureMonth(mk); }, [mk]);
+/* ---------- ดูรายละเอียดของ ---------- */
+function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
+  const ph = (item.ph || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const t = priceTrend(item);
+  return (
+    <Sheet title={item.name} onClose={onClose}>
+      {photo ? <img src={photo} alt="" style={{ width:"100%", maxHeight:220, objectFit:"cover", borderRadius:16, marginBottom:14 }} /> : null}
+      <div className="card" style={{ padding:"4px 14px", marginBottom:12 }}>
+        {item.brand  ? <div className="kv"><span style={{ color:"var(--muted)" }}>ยี่ห้อ</span><b>{item.brand}</b></div> : null}
+        {item.detail ? <div className="kv"><span style={{ color:"var(--muted)" }}>รายละเอียด</span><span style={{ textAlign:"right" }}>{item.detail}</span></div> : null}
+        <div className="kv"><span style={{ color:"var(--muted)" }}>หมวด</span><span>{item.cat}</span></div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>หน่วย</span><span>{item.unit}</span></div>
+        {item.vendor ? <div className="kv"><span style={{ color:"var(--muted)" }}>ซื้อจาก</span><b>{item.vendor}</b></div> : null}
+        <div className="kv">
+          <span style={{ color:"var(--muted)" }}>ราคาต่อหน่วย</span>
+          <span>
+            <b style={{ fontSize:16 }}>{money(item.price)}</b>
+            {t ? <span style={{ color: t.up ? "var(--red)" : "var(--green)", marginLeft:8, fontSize:13 }}>
+              {t.up ? "▲ แพงขึ้น" : "▼ ถูกลง"} {nf(Math.abs(t.diff))}
+            </span> : null}
+          </span>
+        </div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>ขั้นต่ำที่ควรมี</span><span>{nf(item.min)} {item.unit}</span></div>
+        <div className="kv">
+          <span style={{ color:"var(--muted)" }}>ยอดนับล่าสุด</span>
+          <span>{latest ? <b>{nf(latest.qty)} {item.unit}</b> : "—"}
+            {latest ? <span style={{ color:"var(--muted)", fontSize:12 }}> · {thDate(latest.date)}</span> : null}</span>
+        </div>
+      </div>
 
-  const list = (moves[mk] || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  const item = items.find(i => i.id === itemId);
+      <div className="card" style={{ padding:"6px 14px", marginBottom:14 }}>
+        <div style={{ fontWeight:600, padding:"8px 0 2px", fontSize:14 }}>📈 ประวัติราคา</div>
+        {!ph.length ? <div style={{ color:"var(--muted)", fontSize:13, padding:"6px 0 12px" }}>
+          ยังไม่มีประวัติ — พอแก้ราคา/ยี่ห้อ/ร้านที่ซื้อ ระบบจะเก็บให้อัตโนมัติ
+        </div> : null}
+        {ph.map((h, i) => (
+          <div key={i} className="kv">
+            <span style={{ fontSize:13 }}>
+              {thDate(h.date)}
+              <span style={{ color:"var(--muted)" }}>{h.vendor ? " · " + h.vendor : ""}{h.brand ? " · " + h.brand : ""}</span>
+            </span>
+            <b>{money(h.price)}</b>
+          </div>
+        ))}
+      </div>
 
-  const submit = async () => {
-    if (!itemId) { say("เลือกรายการก่อน"); return; }
-    const n = Number(qty);
-    if (!n || n <= 0) { say("ใส่จำนวนให้ถูกต้อง"); return; }
-    LS.set("ps_by", by);
-    await addMoves([{ id:uid(), ts:Date.now(), date:today(), itemId, type, qty:n,
-      cost:Number(item && item.cost) || 0, note:note.trim(), by:by.trim() }]);
-    setQty(""); setNote(""); say("บันทึกแล้ว ✓");
+      <div className="row" style={{ gap:8 }}>
+        <button className="btn ghost press" onClick={onEdit}>✏️ แก้ไข</button>
+        <button className="btn press" style={{ flex:1 }} onClick={onOrder}>🛒 ใส่รายการสั่งของ</button>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ---------- เพิ่ม/แก้ไขรายการ ---------- */
+function ItemSheet({ item, cats, units, isOwner, photo, onClose, onSave, onDelete }) {
+  const [f, setF] = useState(() => item ? { ...item } : {
+    id:uid(), name:"", brand:"", detail:"", cat:cats[0] || "", unit:units[0] || "ชิ้น",
+    price:0, min:0, vendor:"", ph:[]
+  });
+  const [img, setImg] = useState(photo || null);
+  const [dirty, setDirty] = useState(false);
+  const fileRef = useRef(null);
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const pick = async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setImg(await compressImg(file, 400, 0.6)); setDirty(true);
   };
 
-  const months = useMemo(() => {
-    const r = []; const d = new Date();
-    for (let i = 0; i < 12; i++) { r.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); d.setMonth(d.getMonth()-1); }
-    return r;
-  }, []);
+  const submit = () => {
+    if (!f.name.trim()) { alert("ใส่ชื่อของก่อน"); return; }
+    const next = { ...f, name:f.name.trim(), brand:(f.brand||"").trim(), detail:(f.detail||"").trim(),
+      vendor:(f.vendor||"").trim(), price:Number(f.price)||0, min:Number(f.min)||0 };
+    const changed = !item || Number(item.price) !== next.price || (item.vendor||"") !== next.vendor || (item.brand||"") !== next.brand;
+    if (changed) {
+      next.ph = [{ ts:Date.now(), date:today(), price:next.price, vendor:next.vendor, brand:next.brand },
+                 ...(f.ph || [])].slice(0, 20);
+    }
+    onSave(next, dirty ? img : undefined);
+  };
 
   return (
-    <div style={{ padding:"14px 16px" }}>
-      <div className="card" style={{ padding:14, marginBottom:14 }}>
-        <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-          {["in","out","adj"].map(t => (
-            <button key={t} className="press" onClick={() => setType(t)}
-              style={{ flex:1, padding:"10px 0", borderRadius:12, fontSize:14, fontWeight:500,
-                background: type === t ? MOVE_COLOR[t] : "var(--tint)",
-                color: type === t ? "#fff" : "var(--muted)" }}>
-              {t === "in" ? "＋ รับเข้า" : t === "out" ? "－ เบิกออก" : "⇄ ปรับยอด"}
-            </button>
-          ))}
+    <Sheet title={item ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"} onClose={onClose}>
+      <div className="row" style={{ marginBottom:14 }}>
+        <div className="press" onClick={() => fileRef.current && fileRef.current.click()}
+          style={{ width:78, height:78, borderRadius:16, background:"var(--soft)", display:"flex",
+            alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:26, flex:"none" }}>
+          {img ? <img src={img} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "📷"}
         </div>
-        <Field label="รายการ">
-          <select value={itemId} onChange={e => setItemId(e.target.value)}>
-            <option value="">— เลือกของ —</option>
-            {items.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"))
-              .map(i => <option key={i.id} value={i.id}>{i.name} ({nf(i.qty)} {i.unit})</option>)}
-          </select>
-        </Field>
-        <Field label={type === "adj" ? "ยอดคงเหลือจริง" : "จำนวน"}>
-          <div className="row">
-            <button className="btn ghost press" style={{ width:48 }}
-              onClick={() => setQty(String(Math.max(0, (Number(qty)||0) - 1)))}>−</button>
-            <input type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)}
-              style={{ textAlign:"center", fontSize:20, fontWeight:600 }} placeholder="0" />
-            <button className="btn ghost press" style={{ width:48 }}
-              onClick={() => setQty(String((Number(qty)||0) + 1))}>＋</button>
-            <div style={{ width:52, textAlign:"center", color:"var(--muted)", fontSize:13 }}>{item ? item.unit : ""}</div>
-          </div>
-        </Field>
-        <div className="row" style={{ gap:8 }}>
-          <div style={{ flex:1.4 }}><Field label="หมายเหตุ"><input value={note} onChange={e => setNote(e.target.value)} placeholder="เช่น เติมเครื่อง 3" /></Field></div>
-          <div style={{ flex:1 }}><Field label="ผู้บันทึก"><input value={by} onChange={e => setBy(e.target.value)} placeholder="ชื่อ" /></Field></div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:12.5, color:"var(--muted)" }}>แตะเพื่อใส่รูปสินค้า</div>
+          {img ? <button className="chip press" style={{ marginTop:6, color:"var(--red)" }}
+            onClick={() => { setImg(null); setDirty(true); }}>ลบรูป</button> : null}
         </div>
-        <button className="btn press" style={{ width:"100%" }} onClick={submit}>บันทึก</button>
+        <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display:"none" }} />
       </div>
 
-      <div className="row" style={{ marginBottom:8 }}>
-        <div style={{ fontWeight:600, flex:1 }}>ประวัติเคลื่อนไหว</div>
-        <select value={mk} onChange={e => setMk(e.target.value)} style={{ width:130, padding:"7px 10px", fontSize:14 }}>
-          {months.map(m => <option key={m} value={m}>{THMON[+m.slice(5)-1]} {(+m.slice(0,4)+543)%100}</option>)}
-        </select>
+      <Field label="ชื่อของ *"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น น้ำยาซักผ้า 20 ลิตร" /></Field>
+      <Field label="ยี่ห้อ" hint="ไม่บังคับ"><input value={f.brand} onChange={e => set("brand", e.target.value)} placeholder="เช่น Kao" /></Field>
+      <Field label="รายละเอียด / รุ่น" hint="ไม่บังคับ">
+        <textarea rows="2" value={f.detail} onChange={e => set("detail", e.target.value)} placeholder="เช่น สูตรเข้มข้น กลิ่นซากุระ" />
+      </Field>
+      <div className="row" style={{ gap:8 }}>
+        <div style={{ flex:1 }}><Field label="หมวด">
+          <select value={f.cat} onChange={e => set("cat", e.target.value)}>{cats.map(c => <option key={c} value={c}>{c}</option>)}</select>
+        </Field></div>
+        <div style={{ flex:1 }}><Field label="หน่วยนับ">
+          <select value={f.unit} onChange={e => set("unit", e.target.value)}>{units.map(u => <option key={u} value={u}>{u}</option>)}</select>
+        </Field></div>
+      </div>
+      <Field label="ซื้อจากที่ไหน" hint="ไม่บังคับ"><input value={f.vendor} onChange={e => set("vendor", e.target.value)} placeholder="เช่น แม็คโคร / ร้านเคมีภัณฑ์" /></Field>
+      <div className="row" style={{ gap:8 }}>
+        <div style={{ flex:1 }}><Field label="ราคาต่อหน่วย (บาท)">
+          <input type="number" inputMode="decimal" value={f.price} onChange={e => set("price", e.target.value)} /></Field></div>
+        <div style={{ flex:1 }}><Field label="ขั้นต่ำที่ควรมี">
+          <input type="number" inputMode="decimal" value={f.min} onChange={e => set("min", e.target.value)} /></Field></div>
+      </div>
+      <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:14, lineHeight:1.6 }}>
+        💡 เปลี่ยนราคา ยี่ห้อ หรือร้านที่ซื้อ ระบบจะเก็บเป็นประวัติให้อัตโนมัติ ไว้เทียบว่าขึ้นหรือลง
       </div>
 
-      {!list.length ? <div className="empty">ยังไม่มีรายการเดือนนี้</div> : null}
-      <div style={{ display:"grid", gap:7 }}>
-        {list.map(mv => {
-          const it = items.find(i => i.id === mv.itemId);
-          return (
-            <div key={mv.id} className="card" style={{ padding:"10px 12px", display:"flex", gap:10, alignItems:"center" }}>
-              <div className="thumb" style={{ width:36, height:36, fontSize:15, background: MOVE_COLOR[mv.type], color:"#fff" }}>
-                {mv.type === "in" ? "＋" : mv.type === "out" ? "－" : "⇄"}
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:500 }}>{it ? it.name : "(ลบแล้ว)"}</div>
-                <div style={{ fontSize:11.5, color:"var(--muted)" }}>
-                  {thDate(mv.date)} · {MOVE_LABEL[mv.type]}{mv.by ? " · " + mv.by : ""}{mv.note ? " · " + mv.note : ""}
-                </div>
-              </div>
-              <div style={{ fontWeight:600, color: MOVE_COLOR[mv.type] }}>{nf(mv.qty)}</div>
-              {isOwner ? (
-                <button className="press" onClick={() => { if (confirm(mv.type === "adj" ? "ลบประวัติการปรับยอดนี้? (ยอดคงเหลือจะไม่ถูกย้อนกลับ)" : "ลบรายการนี้ และคืนยอดสต๊อก?")) delMove(mv); }}
-                  style={{ width:30, height:30, borderRadius:9, background:"var(--tint)", fontSize:13 }}>🗑</button>
-              ) : null}
-            </div>
-          );
-        })}
+      <div className="row" style={{ gap:8 }}>
+        {item && isOwner ? <button className="btn danger press" onClick={() => onDelete(item)}>ลบ</button> : null}
+        <button className="btn press" style={{ flex:1 }} onClick={submit}>บันทึก</button>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
-/* ---------- TAB: นับสต๊อก ---------- */
-function TabCount({ items, cats, addMoves, say }) {
-  const [cat, setCat] = useState("*");
+/* ---------- TAB 2: นับสต๊อก ---------- */
+function TabCount({ items, cats, photos, latest, shop, saveCount, say, setTab }) {
   const [vals, setVals] = useState({});
   const [by, setBy] = useState(LS.get("ps_by") || "");
+  const [date, setDate] = useState(today());
+  const [note, setNote] = useState("");
+  const [cat, setCat] = useState("*");
+  const [done, setDone] = useState(null);
 
   const list = useMemo(() => {
     let r = items.slice();
     if (cat !== "*") r = r.filter(i => i.cat === cat);
-    return r.sort((a, b) => (a.name || "").localeCompare(b.name || "", "th"));
+    return r.sort((a, b) => (a.cat || "").localeCompare(b.cat || "", "th") || (a.name || "").localeCompare(b.name || "", "th"));
   }, [items, cat]);
 
-  const diffs = list.filter(i => vals[i.id] !== undefined && vals[i.id] !== "" &&
-    Number(vals[i.id]) !== (Number(i.qty) || 0));
+  const filled = items.filter(i => vals[i.id] !== undefined && vals[i.id] !== "").length;
 
   const submit = async () => {
-    if (!diffs.length) { say("ไม่มีผลต่าง"); return; }
-    if (!confirm(`ปรับยอด ${diffs.length} รายการ?`)) return;
+    const lines = items.filter(i => vals[i.id] !== undefined && vals[i.id] !== "")
+      .map(i => ({ itemId:i.id, qty:Number(vals[i.id]) }));
+    if (!lines.length) { say("ยังไม่ได้กรอกยอดเลย"); return; }
+    if (!confirm(`บันทึกการนับ ${lines.length} รายการ วันที่ ${thDate(date)} ?`)) return;
     LS.set("ps_by", by);
-    await addMoves(diffs.map(i => ({
-      id:uid(), ts:Date.now(), date:today(), itemId:i.id, type:"adj",
-      qty:Number(vals[i.id]), cost:Number(i.cost) || 0,
-      note:`นับจริง (ระบบ ${nf(i.qty)})`, by:by.trim()
-    })), `นับสต๊อก ${diffs.length} รายการ`);
-    setVals({}); say("ปรับยอดแล้ว ✓");
+    const session = { id:uid(), ts:Date.now(), date, by:by.trim(), note:note.trim(), lines };
+    await saveCount(session);
+    setDone(session); setVals({}); setNote("");
   };
 
+  if (done) return <CountDone session={done} items={items} shop={shop} say={say}
+    onNew={() => setDone(null)} onGoOrder={() => { setDone(null); setTab("order"); }} />;
+
   return (
-    <div style={{ padding:"14px 0" }}>
-      <div style={{ padding:"0 16px 10px", fontSize:13, color:"var(--muted)" }}>
-        กรอกเฉพาะของที่นับ — ช่องที่เว้นว่างจะไม่ถูกแก้
+    <div style={{ padding:"14px 0 0" }}>
+      <div style={{ padding:"0 16px 12px" }}>
+        <div className="card" style={{ padding:13 }}>
+          <div className="row" style={{ gap:8 }}>
+            <div style={{ flex:1 }}><Field label="วันที่นับ"><input type="date" value={date} onChange={e => setDate(e.target.value)} /></Field></div>
+            <div style={{ flex:1 }}><Field label="ผู้นับ"><input value={by} onChange={e => setBy(e.target.value)} placeholder="ชื่อ" /></Field></div>
+          </div>
+          <Field label="หมายเหตุ" hint="ไม่บังคับ"><input value={note} onChange={e => setNote(e.target.value)} placeholder="เช่น นับหลังปิดร้าน" /></Field>
+          <div style={{ fontSize:13, color:"var(--muted)" }}>
+            กรอกแล้ว <b style={{ color:"var(--head)" }}>{filled}</b> / {items.length} รายการ · ช่องที่เว้นว่างจะไม่ถูกบันทึก
+          </div>
+        </div>
       </div>
+
       <div className="scroll-x">
         <button className={"chip press " + (cat === "*" ? "on" : "")} onClick={() => setCat("*")}>ทั้งหมด</button>
         {cats.map(c => <button key={c} className={"chip press " + (cat === c ? "on" : "")} onClick={() => setCat(c)}>{c}</button>)}
@@ -1111,180 +1154,352 @@ function TabCount({ items, cats, addMoves, say }) {
         {list.map(i => {
           const v = vals[i.id];
           const has = v !== undefined && v !== "";
-          const d = has ? Number(v) - (Number(i.qty) || 0) : 0;
+          const low = has && Number(i.min) > 0 && Number(v) <= Number(i.min);
+          const prev = latest.map[i.id];
           return (
-            <div key={i.id} className="card" style={{ padding:"10px 12px", display:"flex", gap:10, alignItems:"center" }}>
+            <div key={i.id} className="card" style={{ padding:"10px 12px", display:"flex", gap:10, alignItems:"center",
+              borderColor: low ? "#EFC3C9" : has ? "#CFE3D6" : "var(--line)" }}>
+              {photos[i.id] ? <img className="thumb" style={{ width:38, height:38 }} src={photos[i.id]} alt="" />
+                            : <div className="thumb" style={{ width:38, height:38, fontSize:16 }}>📦</div>}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
-                <div style={{ fontSize:11.5, color:"var(--muted)" }}>ระบบ {nf(i.qty)} {i.unit}</div>
+                <div style={{ fontSize:14, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{i.name}</div>
+                <div style={{ fontSize:11, color:"var(--muted)" }}>
+                  {prev ? `ครั้งก่อน ${nf(prev.qty)}` : "ยังไม่เคยนับ"}{Number(i.min) > 0 ? ` · ขั้นต่ำ ${nf(i.min)}` : ""}
+                </div>
               </div>
-              {has && d !== 0 ? (
-                <span className="tag" style={{ background: d > 0 ? "#E4F2EA" : "#FBE5E8", color: d > 0 ? "var(--green)" : "var(--red)" }}>
-                  {d > 0 ? "+" : ""}{nf(d)}
-                </span>
-              ) : null}
-              <input type="number" inputMode="decimal" placeholder="นับจริง" value={v === undefined ? "" : v}
+              {low ? <span className="tag" style={{ background:"#FBE5E8", color:"var(--red)" }}>ต้องสั่ง</span> : null}
+              <input type="number" inputMode="decimal" placeholder={i.unit} value={v === undefined ? "" : v}
                 onChange={e => setVals(p => ({ ...p, [i.id]: e.target.value }))}
-                style={{ width:96, textAlign:"center", fontWeight:600 }} />
+                style={{ width:88, textAlign:"center", fontWeight:600 }} />
             </div>
           );
         })}
       </div>
 
       <div style={{ padding:"14px 16px 0" }}>
-        <Field label="ผู้นับ"><input value={by} onChange={e => setBy(e.target.value)} placeholder="ชื่อผู้นับ" /></Field>
         <button className="btn gold press" style={{ width:"100%" }} onClick={submit}>
-          บันทึกผลนับ {diffs.length ? `(ต่าง ${diffs.length} รายการ)` : ""}
+          ✅ บันทึกผลนับ {filled ? `(${filled} รายการ)` : ""}
         </button>
       </div>
     </div>
   );
 }
 
-/* ---------- TAB: สรุป ---------- */
-function TabReport({ items, cats, moves, ensureMonth, stockValue, lowItems, shop, isOwner }) {
-  const [mode, setMode] = useState("month");
-  const [day, setDay] = useState(today());
-  const [mk, setMk] = useState(monthOf(today()));
-  const [yr, setYr] = useState(String(new Date().getFullYear()));
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      setBusy(true);
-      if (mode === "year") { for (let m = 1; m <= 12; m++) await ensureMonth(`${yr}-${pad(m)}`); }
-      else if (mode === "month") await ensureMonth(mk);
-      else await ensureMonth(monthOf(day));
-      setBusy(false);
-    })();
-  }, [mode, day, mk, yr]);
-
-  const rows = useMemo(() => {
-    let all = [];
-    if (mode === "year") { for (let m = 1; m <= 12; m++) all = all.concat(moves[`${yr}-${pad(m)}`] || []); }
-    else if (mode === "month") all = (moves[mk] || []).slice();
-    else all = (moves[monthOf(day)] || []).filter(m => m.date === day);
-    return all;
-  }, [mode, day, mk, yr, moves]);
-
-  const sum = useMemo(() => {
-    let inQ = 0, outQ = 0, inV = 0, outV = 0;
-    const byCat = {};
-    rows.forEach(m => {
-      const it = items.find(i => i.id === m.itemId);
-      const c = (it && it.cat) || "ไม่ระบุหมวด";
-      const cost = Number(m.cost) || (it ? Number(it.cost) || 0 : 0);
-      byCat[c] = byCat[c] || { inQ:0, outQ:0, inV:0, outV:0 };
-      if (m.type === "in")  { inQ  += +m.qty; inV  += m.qty * cost; byCat[c].inQ  += +m.qty; byCat[c].inV  += m.qty * cost; }
-      if (m.type === "out") { outQ += +m.qty; outV += m.qty * cost; byCat[c].outQ += +m.qty; byCat[c].outV += m.qty * cost; }
+function countGroups(session, items) {
+  const byCat = {};
+  (session.lines || []).forEach(l => {
+    const it = items.find(x => x.id === l.itemId);
+    if (!it) return;
+    const c = it.cat || "อื่นๆ";
+    (byCat[c] = byCat[c] || []).push({
+      left: it.name + (it.brand ? ` (${it.brand})` : ""),
+      right: `${nf(l.qty)} ${it.unit}`,
+      flag: Number(it.min) > 0 && Number(l.qty) <= Number(it.min) ? "🔴" : ""
     });
-    return { inQ, outQ, inV, outV, byCat };
-  }, [rows, items]);
+  });
+  return Object.entries(byCat).map(([title, lines]) => ({ title, lines }));
+}
 
-  const topOut = useMemo(() => {
-    const m = {};
-    rows.filter(r => r.type === "out").forEach(r => { m[r.itemId] = (m[r.itemId] || 0) + Number(r.qty); });
-    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8)
-      .map(([id, q]) => ({ it: items.find(i => i.id === id), q }));
-  }, [rows, items]);
-
-  const exportXlsx = async () => {
-    try {
-      if (!window.XLSX) await loadScript("https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js");
-      const XLSX = window.XLSX;
-      const wb = XLSX.utils.book_new();
-      const s1 = [["Item","Category","Unit","Qty","Cost","Value","Min","Expiry"]];
-      items.forEach(i => s1.push([i.name, i.cat || "", i.unit || "", Number(i.qty) || 0,
-        Number(i.cost) || 0, (Number(i.qty)||0)*(Number(i.cost)||0), Number(i.min) || 0, i.exp || ""]));
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s1), "Stock");
-      const s2 = [["Date","Type","Item","Qty","Unit","Cost","Value","By","Note"]];
-      rows.slice().sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(m => {
-        const it = items.find(i => i.id === m.itemId);
-        const cost = Number(m.cost) || 0;
-        s2.push([m.date, MOVE_LABEL[m.type], it ? it.name : "-", Number(m.qty),
-          it ? it.unit : "", cost, Number(m.qty) * cost, m.by || "", m.note || ""]);
-      });
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s2), "Movements");
-      const s3 = [["Category","In Qty","In Value","Out Qty","Out Value"]];
-      Object.entries(sum.byCat).forEach(([c, v]) => s3.push([c, v.inQ, v.inV, v.outQ, v.outV]));
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s3), "ByCategory");
-      const tag = mode === "day" ? day : mode === "month" ? mk : yr;
-      XLSX.writeFile(wb, `stock-${(shop && shop.id) || "shop"}-${tag}.xlsx`);
-    } catch (e) { alert("Export ไม่สำเร็จ: " + e.message); }
-  };
-
-  const months = useMemo(() => {
-    const r = []; const d = new Date();
-    for (let i = 0; i < 18; i++) { r.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); d.setMonth(d.getMonth()-1); }
-    return r;
-  }, []);
-  const years = useMemo(() => {
-    const y = new Date().getFullYear(); return [y, y-1, y-2].map(String);
-  }, []);
+function CountDone({ session, items, shop, say, onNew, onGoOrder }) {
+  const groups = countGroups(session, items);
+  const lowN = groups.reduce((s, g) => s + g.lines.filter(l => l.flag).length, 0);
+  const head = `${thDate(session.date)}${session.by ? " · ผู้นับ: " + session.by : ""}${session.note ? " · " + session.note : ""}`;
+  const footer = `รวม ${(session.lines || []).length} รายการ · ต้องสั่ง ${lowN} รายการ`;
 
   return (
-    <div style={{ padding:"14px 16px" }}>
-      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-        {[["day","รายวัน"],["month","รายเดือน"],["year","รายปี"]].map(([k,t]) => (
-          <button key={k} className={"chip press " + (mode === k ? "on" : "")} style={{ flex:1, padding:"9px 0", textAlign:"center" }}
-            onClick={() => setMode(k)}>{t}</button>
-        ))}
-      </div>
-      <div style={{ marginBottom:12 }}>
-        {mode === "day"   && <input type="date" value={day} onChange={e => setDay(e.target.value)} />}
-        {mode === "month" && <select value={mk} onChange={e => setMk(e.target.value)}>
-          {months.map(m => <option key={m} value={m}>{THMON[+m.slice(5)-1]} {+m.slice(0,4)+543}</option>)}</select>}
-        {mode === "year"  && <select value={yr} onChange={e => setYr(e.target.value)}>
-          {years.map(y => <option key={y} value={y}>ปี {+y+543}</option>)}</select>}
+    <div style={{ padding:"16px" }}>
+      <div className="card" style={{ padding:20, textAlign:"center", marginBottom:14 }}>
+        <div style={{ fontSize:44 }}>✅</div>
+        <div style={{ fontWeight:600, fontSize:17, margin:"6px 0 3px" }}>บันทึกการนับแล้ว</div>
+        <div style={{ color:"var(--muted)", fontSize:13 }}>{head}</div>
+        <div style={{ marginTop:10, fontSize:14 }}>
+          {(session.lines || []).length} รายการ · <b style={{ color: lowN ? "var(--red)" : "var(--green)" }}>ต้องสั่ง {lowN}</b>
+        </div>
       </div>
 
-      {busy ? <div className="empty" style={{ padding:14 }}>กำลังรวมข้อมูล…</div> : null}
-
-      <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-        <StatCard label="รับเข้า" value={nf(sum.inQ)} sub={isOwner ? money(sum.inV) : ""} color="var(--green)" />
-        <StatCard label="เบิกออก" value={nf(sum.outQ)} sub={isOwner ? money(sum.outV) : ""} color="var(--red)" />
+      <div style={{ display:"grid", gap:8, marginBottom:14 }}>
+        <button className="btn press" onClick={() => copyText(
+          buildText("📋 นับสต๊อก", shop ? shop.name : "", head, groups, footer), say)}>
+          📋 คัดลอกเป็นข้อความ
+        </button>
+        <button className="btn gold press" onClick={() => shareCanvas(
+          renderImage({ title:"นับสต๊อก · " + (shop ? shop.name : ""), head, groups, footer,
+            color: colorOf(shop && shop.color).head }),
+          `count-${session.date}.png`, say)}>
+          🖼 ส่งเป็นรูปภาพ
+        </button>
+        <button className="btn ghost press" onClick={onGoOrder}>🛒 ไปหน้าสั่งของ</button>
+        <button className="btn ghost press" onClick={onNew}>เริ่มนับรอบใหม่</button>
       </div>
-      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-        {isOwner ? <StatCard label="มูลค่าสต๊อกคงเหลือ" value={money(stockValue)} color="var(--gold)" /> : null}
-        <StatCard label="ต่ำกว่าเกณฑ์" value={lowItems.length} sub="รายการ" color={lowItems.length ? "var(--red)" : "var(--navy)"} />
-      </div>
 
-      <div className="card" style={{ padding:"6px 14px", marginBottom:14 }}>
-        <div style={{ fontWeight:600, padding:"8px 0 4px" }}>แยกตามหมวด</div>
-        {!Object.keys(sum.byCat).length ? <div className="empty" style={{ padding:16 }}>ไม่มีข้อมูล</div> : null}
-        {Object.entries(sum.byCat).sort((a,b) => b[1].outV - a[1].outV).map(([c, v]) => (
-          <div key={c} className="kv">
-            <span>{c}</span>
-            <span style={{ color:"var(--muted)", fontSize:13 }}>
-              <b style={{ color:"var(--green)" }}>+{nf(v.inQ)}</b> / <b style={{ color:"var(--red)" }}>−{nf(v.outQ)}</b>
-              {isOwner ? <span> · {money(v.outV)}</span> : null}
-            </span>
+      <div className="card" style={{ padding:"6px 14px" }}>
+        {groups.map(g => (
+          <div key={g.title}>
+            <div style={{ fontWeight:600, fontSize:13, color:"var(--muted)", padding:"12px 0 2px" }}>{g.title}</div>
+            {g.lines.map((l, i) => (
+              <div key={i} className="kv">
+                <span style={{ fontSize:13.5 }}>{l.left} {l.flag}</span>
+                <b>{l.right}</b>
+              </div>
+            ))}
           </div>
         ))}
       </div>
-
-      <div className="card" style={{ padding:"6px 14px", marginBottom:14 }}>
-        <div style={{ fontWeight:600, padding:"8px 0 4px" }}>ของที่ใช้เยอะสุด</div>
-        {!topOut.length ? <div className="empty" style={{ padding:16 }}>ไม่มีข้อมูล</div> : null}
-        {topOut.map((r, n) => (
-          <div key={n} className="kv">
-            <span>{n + 1}. {r.it ? r.it.name : "(ลบแล้ว)"}</span>
-            <b>{nf(r.q)} {r.it ? r.it.unit : ""}</b>
-          </div>
-        ))}
-      </div>
-
-      <button className="btn gold press" style={{ width:"100%" }} onClick={exportXlsx}>📥 Export Excel</button>
     </div>
   );
 }
 
-/* ---------- TAB: ตั้งค่า ---------- */
-function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveItems, isOwner, cfg, setCfg, setSheet, say, loadSeed, exportJson, importJson, cleanupSeed }) {
+/* ---------- TAB 3: สั่งของ ---------- */
+function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, saveOrder, say }) {
+  const [by, setBy] = useState(LS.get("ps_by") || "");
+  const [note, setNote] = useState("");
+  const [pick, setPick] = useState(false);
+  const [q, setQ] = useState("");
+
+  useEffect(() => {
+    if (Object.keys(orderDraft).length) return;
+    const d = {};
+    lowItems.forEach(i => {
+      const cur = latest.map[i.id] ? Number(latest.map[i.id].qty) : 0;
+      d[i.id] = Math.max(Math.ceil(Number(i.min) * 2 - cur), 1);
+    });
+    if (Object.keys(d).length) setOrderDraft(d);
+  }, [lowItems]);
+
+  const chosen = items.filter(i => Number(orderDraft[i.id]) > 0);
+  const total = chosen.reduce((s, i) => s + Number(orderDraft[i.id]) * (Number(i.price) || 0), 0);
+
+  const groups = useMemo(() => {
+    const byVendor = {};
+    chosen.forEach(i => {
+      const v = i.vendor || "ไม่ระบุร้าน";
+      (byVendor[v] = byVendor[v] || []).push({
+        left: i.name + (i.brand ? ` (${i.brand})` : ""),
+        right: `${nf(orderDraft[i.id])} ${i.unit}`,
+        sub: money(Number(orderDraft[i.id]) * (Number(i.price) || 0))
+      });
+    });
+    return Object.entries(byVendor).map(([title, lines]) => ({ title, lines }));
+  }, [chosen, orderDraft]);
+
+  const head = `${thDate(today())}${by ? " · สั่งโดย: " + by : ""}${note ? " · " + note : ""}`;
+  const footer = `รวม ${chosen.length} รายการ · ประมาณ ${money(total)}`;
+
+  const searchList = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return items.filter(i => !s || [i.name, i.brand, i.vendor].join(" ").toLowerCase().includes(s))
+      .sort((a, b) => (a.name || "").localeCompare(b.name || "", "th")).slice(0, 40);
+  }, [items, q]);
+
+  const save = async () => {
+    if (!chosen.length) { say("ยังไม่ได้เลือกของ"); return; }
+    LS.set("ps_by", by);
+    await saveOrder({ id:uid(), ts:Date.now(), date:today(), by:by.trim(), note:note.trim(), total,
+      lines: chosen.map(i => ({ itemId:i.id, qty:Number(orderDraft[i.id]), price:Number(i.price) || 0, vendor:i.vendor || "" })) });
+    say("บันทึกใบสั่งของแล้ว ✓");
+  };
+
+  return (
+    <div style={{ padding:"14px 16px" }}>
+      <div className="card" style={{ padding:13, marginBottom:12 }}>
+        <div className="row" style={{ gap:8 }}>
+          <div style={{ flex:1 }}><Field label="ผู้สั่ง"><input value={by} onChange={e => setBy(e.target.value)} placeholder="ชื่อ" /></Field></div>
+          <div style={{ flex:1.3 }}><Field label="หมายเหตุ"><input value={note} onChange={e => setNote(e.target.value)} placeholder="เช่น ซื้อพรุ่งนี้เช้า" /></Field></div>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <Stat label="เลือกแล้ว" value={chosen.length} sub="รายการ" />
+          <Stat label="ราคาประมาณ" value={money(total)} color="var(--gold)" />
+        </div>
+      </div>
+
+      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        <button className="btn ghost press" style={{ flex:1 }} onClick={() => setPick(!pick)}>
+          {pick ? "✕ ปิดรายการ" : "➕ เพิ่มของเอง"}
+        </button>
+        <button className="btn ghost press" onClick={() => setOrderDraft({})}>ล้าง</button>
+      </div>
+
+      {pick ? (
+        <div className="card" style={{ padding:12, marginBottom:12 }}>
+          <input placeholder="🔍 ค้นหาของที่จะสั่ง" value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom:10 }} />
+          <div style={{ maxHeight:280, overflow:"auto", display:"grid", gap:6 }}>
+            {searchList.map(i => {
+              const on = Number(orderDraft[i.id]) > 0;
+              return (
+                <button key={i.id} className="press" onClick={() => setOrderDraft(p => {
+                  const n = { ...p }; if (on) delete n[i.id]; else n[i.id] = 1; return n;
+                })} style={{ textAlign:"left", padding:"9px 11px", borderRadius:12,
+                  border:"1px solid " + (on ? "var(--head)" : "var(--line)"), background: on ? "var(--soft)" : "#fff",
+                  display:"flex", gap:8, alignItems:"center" }}>
+                  <span style={{ flex:1, fontSize:13.5 }}>{i.name}
+                    <span style={{ color:"var(--muted)", fontSize:11.5 }}>{i.vendor ? " · " + i.vendor : ""}</span>
+                  </span>
+                  <span style={{ fontSize:12, color:"var(--muted)" }}>{money(i.price)}</span>
+                  <span>{on ? "✓" : "＋"}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {!chosen.length ? (
+        <div className="empty">
+          <img className="emptypic" src="empty-box.jpg" alt="" />
+          ยังไม่มีของในรายการสั่ง<br/>ระบบจะใส่ของที่ต่ำกว่าขั้นต่ำให้อัตโนมัติหลังนับสต๊อก
+        </div>
+      ) : null}
+
+      {groups.map(g => (
+        <div key={g.title} style={{ marginBottom:12 }}>
+          <div className="sect" style={{ margin:"4px 2px 6px" }}>🏬 {g.title}</div>
+          <div className="card" style={{ padding:"4px 12px" }}>
+            {chosen.filter(i => (i.vendor || "ไม่ระบุร้าน") === g.title).map(i => (
+              <div key={i.id} style={{ display:"flex", gap:8, alignItems:"center", padding:"9px 0",
+                borderBottom:"1px solid var(--line)" }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
+                  <div style={{ fontSize:11.5, color:"var(--muted)" }}>
+                    {money(i.price)}/{i.unit}
+                    {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)}` : ""}
+                  </div>
+                </div>
+                <button className="press" onClick={() => setOrderDraft(p => ({ ...p, [i.id]: Math.max(0, Number(p[i.id] || 0) - 1) }))}
+                  style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>−</button>
+                <input type="number" inputMode="decimal" value={orderDraft[i.id]}
+                  onChange={e => setOrderDraft(p => ({ ...p, [i.id]: e.target.value }))}
+                  style={{ width:60, textAlign:"center", fontWeight:600, padding:"7px 4px" }} />
+                <button className="press" onClick={() => setOrderDraft(p => ({ ...p, [i.id]: Number(p[i.id] || 0) + 1 }))}
+                  style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>＋</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {chosen.length ? (
+        <div style={{ display:"grid", gap:8, marginTop:6 }}>
+          <button className="btn press" onClick={() => copyText(
+            buildText("🛒 รายการสั่งซื้อ", shop ? shop.name : "", head, groups, footer), say)}>
+            📋 คัดลอกเป็นข้อความ
+          </button>
+          <button className="btn gold press" onClick={() => shareCanvas(
+            renderImage({ title:"รายการสั่งซื้อ · " + (shop ? shop.name : ""), head, groups, footer,
+              color: colorOf(shop && shop.color).head }), `order-${today()}.png`, say)}>
+            🖼 ส่งเป็นรูปภาพ
+          </button>
+          <button className="btn ghost press" onClick={save}>💾 บันทึกใบสั่งของ</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------- TAB 4: ประวัติ ---------- */
+function TabHist({ counts, orders, items, shop, loadMonth, delRecord, isOwner, say }) {
+  const [kind, setKind] = useState("count");
+  const [mk, setMk] = useState(monthOf(today()));
+  const [openId, setOpenId] = useState("");
+
+  useEffect(() => { loadMonth(kind, mk); }, [kind, mk]);
+
+  const list = ((kind === "count" ? counts : orders)[mk] || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+  return (
+    <div style={{ padding:"14px 16px" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        <button className={"chip press " + (kind === "count" ? "on" : "")} style={{ flex:1, padding:"9px 0", textAlign:"center" }}
+          onClick={() => setKind("count")}>📋 การนับ</button>
+        <button className={"chip press " + (kind === "order" ? "on" : "")} style={{ flex:1, padding:"9px 0", textAlign:"center" }}
+          onClick={() => setKind("order")}>🛒 ใบสั่งของ</button>
+      </div>
+      <select value={mk} onChange={e => setMk(e.target.value)} style={{ marginBottom:12 }}>
+        {lastMonths(18).map(m => <option key={m} value={m}>{THMON[+m.slice(5)-1]} {+m.slice(0,4)+543}</option>)}
+      </select>
+
+      {!list.length ? <div className="empty">ไม่มีข้อมูลเดือนนี้</div> : null}
+
+      <div style={{ display:"grid", gap:8 }}>
+        {list.map(r => {
+          const open = openId === r.id;
+          const groups = kind === "count" ? countGroups(r, items) : orderGroups(r, items);
+          const head = `${thDate(r.date)}${r.by ? " · " + r.by : ""}${r.note ? " · " + r.note : ""}`;
+          const footer = kind === "count"
+            ? `รวม ${(r.lines || []).length} รายการ`
+            : `รวม ${(r.lines || []).length} รายการ · ประมาณ ${money(r.total)}`;
+          return (
+            <div key={r.id} className="card" style={{ overflow:"hidden" }}>
+              <button className="press" onClick={() => setOpenId(open ? "" : r.id)}
+                style={{ width:"100%", textAlign:"left", padding:"12px 14px", display:"flex", gap:10, alignItems:"center" }}>
+                <div className="thumb" style={{ width:40, height:40, fontSize:17, background:"var(--soft)" }}>
+                  {kind === "count" ? "📋" : "🛒"}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:500, fontSize:14.5 }}>{thDate(r.date)}</div>
+                  <div style={{ fontSize:11.5, color:"var(--muted)" }}>
+                    {(r.lines || []).length} รายการ{r.by ? " · " + r.by : ""}{kind === "order" ? " · " + money(r.total) : ""}
+                  </div>
+                </div>
+                <span style={{ color:"var(--muted)", fontSize:12 }}>{open ? "▲" : "▼"}</span>
+              </button>
+              {open ? (
+                <div style={{ padding:"0 14px 14px", borderTop:"1px solid var(--line)" }}>
+                  {r.note ? <div style={{ fontSize:12.5, color:"var(--muted)", padding:"10px 0 0" }}>📝 {r.note}</div> : null}
+                  {groups.map(g => (
+                    <div key={g.title}>
+                      <div style={{ fontWeight:600, fontSize:12.5, color:"var(--muted)", padding:"12px 0 2px" }}>{g.title}</div>
+                      {g.lines.map((l, i) => (
+                        <div key={i} className="kv"><span style={{ fontSize:13.5 }}>{l.left} {l.flag || ""}</span><b>{l.right}</b></div>
+                      ))}
+                    </div>
+                  ))}
+                  <div style={{ display:"grid", gap:8, marginTop:12 }}>
+                    <button className="btn ghost press" onClick={() => copyText(
+                      buildText(kind === "count" ? "📋 นับสต๊อก" : "🛒 รายการสั่งซื้อ", shop ? shop.name : "", head, groups, footer), say)}>
+                      📋 คัดลอกข้อความ
+                    </button>
+                    <button className="btn ghost press" onClick={() => shareCanvas(
+                      renderImage({ title:(kind === "count" ? "นับสต๊อก · " : "รายการสั่งซื้อ · ") + (shop ? shop.name : ""),
+                        head, groups, footer, color: colorOf(shop && shop.color).head }),
+                      `${kind}-${r.date}.png`, say)}>
+                      🖼 ส่งเป็นรูปภาพ
+                    </button>
+                    {isOwner ? (
+                      <button className="btn danger press" onClick={() => {
+                        if (confirm("ลบรายการนี้ถาวร?")) delRecord(kind, mk, r.id);
+                      }}>🗑 ลบรายการนี้</button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function orderGroups(order, items) {
+  const byVendor = {};
+  (order.lines || []).forEach(l => {
+    const it = items.find(x => x.id === l.itemId);
+    const name = it ? it.name + (it.brand ? ` (${it.brand})` : "") : "(ลบแล้ว)";
+    const v = l.vendor || (it && it.vendor) || "ไม่ระบุร้าน";
+    (byVendor[v] = byVendor[v] || []).push({ left:name, right:`${nf(l.qty)} ${it ? it.unit : ""}` });
+  });
+  return Object.entries(byVendor).map(([title, lines]) => ({ title, lines }));
+}
+
+/* ---------- TAB 5: ตั้งค่า ---------- */
+function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, photos, savePhoto, saveMeta,
+                    isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, exportJson, importJson }) {
   const [newCat, setNewCat] = useState("");
   const [newUnit, setNewUnit] = useState("");
   const [pin, setPin] = useState(cfg.ownerPin);
   const impRef = useRef(null);
+  const catRef = useRef(null);
+  const [catTarget, setCatTarget] = useState("");
 
   if (!isOwner) return (
     <div className="empty" style={{ paddingTop:60 }}>
@@ -1292,10 +1507,11 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
     </div>
   );
 
-  const rmCat = c => {
-    const used = items.filter(i => i.cat === c).length;
-    if (used) { say(`ยังมี ${used} รายการใช้หมวดนี้`); return; }
-    saveItems(null, cats.filter(x => x !== c), null);
+  const pickCatImg = async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !catTarget) return;
+    await savePhoto("cat:" + catTarget, await compressImg(file, 300, 0.6));
+    say("ใส่รูปหมวดแล้ว ✓");
   };
 
   return (
@@ -1309,8 +1525,8 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
         {shops.map(s => (
           <div key={s.id} className="kv">
             <span className="row">
-              {s.logo ? <img src={s.logo} alt="" style={{ width:28, height:28, borderRadius:8, objectFit:"cover" }} />
-                      : <span style={{ fontSize:19 }}>{s.emo || "🏪"}</span>}
+              <span style={{ width:18, height:18, borderRadius:6, background:colorOf(s.color).head, flex:"none" }}></span>
+              <span style={{ fontSize:19 }}>{s.emo || "🏪"}</span>
               <span>{s.name}</span>
             </span>
             <button className="chip press" onClick={() => setSheet({ type:"shop", data:s })}>แก้ไข</button>
@@ -1319,19 +1535,32 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
       </div>
 
       <div className="card" style={{ padding:14, marginBottom:14 }}>
-        <div style={{ fontWeight:600, marginBottom:10 }}>🗂 หมวดหมู่ (ร้าน {shop ? shop.name : "-"})</div>
-        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:10 }}>
+        <div style={{ fontWeight:600, marginBottom:4 }}>🗂 หมวดหมู่</div>
+        <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:10 }}>แตะรูปเพื่อใส่ภาพประกอบหมวด</div>
+        <div style={{ display:"grid", gap:7, marginBottom:10 }}>
           {cats.map(c => (
-            <span key={c} className="chip" style={{ display:"inline-flex", gap:6, alignItems:"center" }}>
-              {c}<button className="press" onClick={() => rmCat(c)} style={{ color:"var(--red)" }}>✕</button>
-            </span>
+            <div key={c} className="row" style={{ gap:9 }}>
+              <div className="press" onClick={() => { setCatTarget(c); setTimeout(() => catRef.current && catRef.current.click(), 30); }}
+                style={{ width:40, height:40, borderRadius:11, background:"var(--soft)", overflow:"hidden",
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flex:"none" }}>
+                {photos["cat:" + c] ? <img src={photos["cat:" + c]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "🗂"}
+              </div>
+              <span style={{ flex:1, fontSize:14 }}>{c}</span>
+              {photos["cat:" + c] ? <button className="chip press" onClick={() => savePhoto("cat:" + c, null)}>ลบรูป</button> : null}
+              <button className="press" onClick={() => {
+                const used = items.filter(i => i.cat === c).length;
+                if (used) { say(`ยังมี ${used} รายการใช้หมวดนี้`); return; }
+                saveMeta(cats.filter(x => x !== c), null);
+              }} style={{ color:"var(--red)", width:30 }}>✕</button>
+            </div>
           ))}
         </div>
+        <input ref={catRef} type="file" accept="image/*" onChange={pickCatImg} style={{ display:"none" }} />
         <div className="row">
           <input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="เพิ่มหมวดใหม่" />
           <button className="btn ghost press" onClick={() => {
             const v = newCat.trim(); if (!v || cats.includes(v)) return;
-            saveItems(null, [...cats, v], null); setNewCat("");
+            saveMeta([...cats, v], null); setNewCat("");
           }}>เพิ่ม</button>
         </div>
       </div>
@@ -1341,7 +1570,7 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
         <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:10 }}>
           {units.map(u => (
             <span key={u} className="chip" style={{ display:"inline-flex", gap:6, alignItems:"center" }}>
-              {u}<button className="press" onClick={() => saveItems(null, null, units.filter(x => x !== u))} style={{ color:"var(--red)" }}>✕</button>
+              {u}<button className="press" onClick={() => saveMeta(null, units.filter(x => x !== u))} style={{ color:"var(--red)" }}>✕</button>
             </span>
           ))}
         </div>
@@ -1349,7 +1578,7 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
           <input value={newUnit} onChange={e => setNewUnit(e.target.value)} placeholder="เพิ่มหน่วยใหม่" />
           <button className="btn ghost press" onClick={() => {
             const v = newUnit.trim(); if (!v || units.includes(v)) return;
-            saveItems(null, null, [...units, v]); setNewUnit("");
+            saveMeta(null, [...units, v]); setNewUnit("");
           }}>เพิ่ม</button>
         </div>
       </div>
@@ -1364,9 +1593,6 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
         </div>
         <input ref={impRef} type="file" accept=".json,application/json" style={{ display:"none" }}
           onChange={e => { const f = e.target.files && e.target.files[0]; if (f) importJson(f); e.target.value = ""; }} />
-        <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:8, lineHeight:1.6 }}>
-          สำรองไว้ก่อนแก้ข้อมูลชุดใหญ่ทุกครั้ง · ไฟล์สำรองเก็บเฉพาะรายการของ ไม่รวมประวัติรับ-เบิก<br/>🧹 ลบเฉพาะของที่ระบบสร้างให้ ของที่คุณเพิ่ม/แก้เองจะไม่หาย
-        </div>
       </div>
 
       <div className="card" style={{ padding:14 }}>
@@ -1383,130 +1609,125 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, items, saveI
   );
 }
 
-/* ---------- Sheet: เพิ่ม/แก้ของ ---------- */
-function ItemSheet({ item, cats, units, isOwner, photo, onClose, onSave, onDelete }) {
-  const [f, setF] = useState(() => item ? { ...item } : {
-    id:uid(), name:"", cat:cats[0] || "", unit:units[0] || "ชิ้น",
-    qty:0, cost:0, min:0, exp:"", emo:"📦"
-  });
-  const [img, setImg] = useState(photo || null);
-  const [dirty, setDirty] = useState(false);
-  const fileRef = useRef(null);
-
+/* ---------- Sheet: ร้าน ---------- */
+function ShopSheet({ shop, shops, onClose, onSave, onDelete }) {
+  const [f, setF] = useState(() => shop ? { ...shop } : { id:"", name:"", emo:"🏪", color:"", bg:"none" });
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const usedColors = shops.filter(s => !shop || s.id !== shop.id).map(s => s.color);
+  const free = PALETTE.filter(c => !usedColors.includes(c.k));
 
-  const pick = async e => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const d = await compressImg(file, 200, 0.55);
-    setImg(d); setDirty(true);
-  };
+  useEffect(() => { if (!f.color && free.length) set("color", free[0].k); }, []);
 
   return (
-    <Sheet title={item ? "แก้ไขรายการ" : "เพิ่มรายการ"} onClose={onClose}>
-      <div className="row" style={{ marginBottom:14 }}>
-        <div className="press" onClick={() => fileRef.current && fileRef.current.click()}
-          style={{ width:74, height:74, borderRadius:16, background:"var(--tint)", display:"flex",
-            alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:26, flex:"none" }}>
-          {img ? <img src={img} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "📷"}
+    <Sheet title={shop ? "แก้ไขร้าน" : "เพิ่มร้าน"} onClose={onClose}>
+      <Field label="ชื่อร้าน"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น Teddy สาขา 2" /></Field>
+      <Field label="รหัสร้าน" hint={shop ? "แก้ไม่ได้" : "อังกฤษ ห้ามซ้ำ"}>
+        <input value={f.id} disabled={!!shop} onChange={e => set("id", e.target.value.replace(/[^a-z0-9_]/g, ""))} placeholder="teddy2" />
+      </Field>
+      <Field label="ไอคอน">
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          {["🏪","🧺","🪷","🧋","☕","🧼","💧","🛒","🍜","💈"].map(e => (
+            <button key={e} className={"chip press " + (f.emo === e ? "on" : "")}
+              onClick={() => set("emo", e)} style={{ fontSize:18 }}>{e}</button>
+          ))}
         </div>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:12.5, color:"var(--muted)" }}>แตะเพื่อใส่รูปสินค้า</div>
-          {img ? <button className="chip press" style={{ marginTop:6, color:"var(--red)" }}
-            onClick={() => { setImg(null); setDirty(true); }}>ลบรูป</button> : null}
+      </Field>
+
+      <Field label="สีประจำร้าน" hint="ห้ามซ้ำกับร้านอื่น">
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(88px,1fr))", gap:8 }}>
+          {PALETTE.map(c => {
+            const taken = usedColors.includes(c.k);
+            const on = f.color === c.k;
+            return (
+              <button key={c.k} className="press" disabled={taken} onClick={() => set("color", c.k)}
+                style={{ padding:"9px 6px", borderRadius:13, background: c.tint, opacity: taken ? .3 : 1,
+                  border:"2px solid " + (on ? c.head : "transparent"), textAlign:"center" }}>
+                <span style={{ display:"block", width:"100%", height:20, borderRadius:7, background:c.head, marginBottom:5 }}></span>
+                <span style={{ fontSize:10.5, color:c.head }}>{c.n}</span>
+              </button>
+            );
+          })}
         </div>
-        <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display:"none" }} />
-      </div>
+      </Field>
 
-      <Field label="ชื่อของ"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น น้ำยาซักผ้า 20 ลิตร" /></Field>
-      <div className="row" style={{ gap:8 }}>
-        <div style={{ flex:1 }}><Field label="หมวด">
-          <select value={f.cat} onChange={e => set("cat", e.target.value)}>
-            {cats.map(c => <option key={c} value={c}>{c}</option>)}
-          </select></Field></div>
-        <div style={{ flex:1 }}><Field label="หน่วย">
-          <select value={f.unit} onChange={e => set("unit", e.target.value)}>
-            {units.map(u => <option key={u} value={u}>{u}</option>)}
-          </select></Field></div>
-      </div>
-      <div className="row" style={{ gap:8 }}>
-        <div style={{ flex:1 }}><Field label="ยอดคงเหลือ">
-          <input type="number" inputMode="decimal" value={f.qty} onChange={e => set("qty", e.target.value)} /></Field></div>
-        <div style={{ flex:1 }}><Field label="จุดสั่งซื้อ (ต่ำกว่านี้ = 🔴)">
-          <input type="number" inputMode="decimal" value={f.min} onChange={e => set("min", e.target.value)} /></Field></div>
-      </div>
-      <div className="row" style={{ gap:8 }}>
-        <div style={{ flex:1 }}><Field label="ราคาทุน / หน่วย">
-          <input type="number" inputMode="decimal" value={f.cost} onChange={e => set("cost", e.target.value)} /></Field></div>
-        <div style={{ flex:1 }}><Field label="วันหมดอายุ (ถ้ามี)">
-          <input type="date" value={f.exp || ""} onChange={e => set("exp", e.target.value)} /></Field></div>
-      </div>
+      <Field label="ลายพื้นหลัง" hint="แสดงบนสีที่เลือกไว้">
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(84px,1fr))", gap:8 }}>
+          {BGS.map(b => {
+            const on = f.bg === b.k;
+            return (
+              <button key={b.k} className="press" onClick={() => set("bg", b.k)}
+                style={{ padding:0, borderRadius:13, overflow:"hidden", textAlign:"center",
+                  border:"2px solid " + (on ? colorOf(f.color).head : "var(--line)"), background:"#fff" }}>
+                <span style={{ display:"block", height:46, backgroundColor:colorOf(f.color).tint,
+                  backgroundImage: b.f ? `url('${b.f}')` : "none", backgroundSize:"96px 96px" }}></span>
+                <span style={{ display:"block", fontSize:10.5, padding:"4px 2px", color:"var(--muted)" }}>{b.n}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Field>
 
-      <div className="row" style={{ gap:8, marginTop:6 }}>
-        {item && isOwner ? <button className="btn danger press" onClick={() => onDelete(item)}>ลบ</button> : null}
+      <div className="row" style={{ gap:8, marginTop:8 }}>
+        {shop ? <button className="btn danger press" onClick={() => onDelete(shop)}>ลบ</button> : null}
         <button className="btn press" style={{ flex:1 }} onClick={() => {
-          if (!f.name.trim()) { alert("ใส่ชื่อของก่อน"); return; }
-          onSave({ ...f, name:f.name.trim(), qty:Number(f.qty)||0, cost:Number(f.cost)||0, min:Number(f.min)||0 },
-            dirty ? img : undefined);
+          const id = (f.id || "").trim(), name = (f.name || "").trim();
+          if (!id || !name) { alert("ใส่ชื่อร้านและรหัสร้าน"); return; }
+          if (!f.color) { alert("เลือกสีประจำร้าน"); return; }
+          onSave({ ...f, id, name });
         }}>บันทึก</button>
       </div>
     </Sheet>
   );
 }
 
-
 /* ---------- Sheet: วิธีใช้ ---------- */
 function HelpSheet({ onClose, isOwner }) {
   const [open, setOpen] = useState("start");
   const SEC = [
-    { k:"start", t:"🚀 เริ่มใช้งาน", body:[
-      "1. เลือกร้านจากแถบด้านบน (ถ้ามีหลายร้าน)",
-      "2. แท็บ 📦 คลัง = ดูของทั้งหมด แตะที่ของเพื่อรับเข้า/เบิกออก",
-      "3. เลขสีแดง = เหลือน้อยกว่าจุดสั่งซื้อ ต้องสั่งเพิ่ม",
-      "4. ปุ่ม 📋 คัดลอกรายการสั่ง = ก๊อปรายการที่ต้องสั่งไปวางในไลน์ได้เลย",
+    { k:"start", t:"🚀 ใช้ยังไง (อ่านอันนี้ก่อน)", body:[
+      "แอปนี้ไม่มีระบบเบิกของ — ของที่หยิบใช้ยังนับเป็นของในสต๊อก",
+      "ยอดคงเหลือมาจากการนับครั้งล่าสุดเท่านั้น",
+      "รอบการทำงาน: นับสต๊อก → ระบบชี้ว่าอะไรต่ำกว่าขั้นต่ำ → ส่งให้หัวหน้า → ทำใบสั่งของ",
     ]},
-    { k:"move", t:"🔁 รับเข้า / เบิกออก", body:[
-      "＋ รับเข้า = ของเข้าร้าน เช่น ซื้อน้ำยามาเติม",
-      "－ เบิกออก = เอาของไปใช้ เช่น เติมน้ำยาเข้าเครื่อง",
-      "⇄ ปรับยอด = ใส่ยอดจริงที่นับได้ ระบบจะแก้ให้ตรง (ไม่ใช่บวก/ลบ)",
-      "ใส่ชื่อผู้บันทึกทุกครั้ง จะได้รู้ว่าใครทำ",
+    { k:"item", t:"📦 รายการของ", body:[
+      "เก็บชื่อ ยี่ห้อ รายละเอียด/รุ่น รูป หน่วย ร้านที่ซื้อ ราคา และขั้นต่ำที่ควรมี",
+      "กรอกแค่ชื่อก็พอ ที่เหลือใส่ทีหลังได้",
+      "แตะที่ของเพื่อดูรายละเอียดและประวัติราคา",
+      "ตัวเลขแดงคือเหลือน้อยกว่าขั้นต่ำ",
+    ]},
+    { k:"price", t:"📈 ประวัติราคา", body:[
+      "ทุกครั้งที่แก้ราคา ยี่ห้อ หรือร้านที่ซื้อ ระบบเก็บเป็นประวัติอัตโนมัติ",
+      "▲ แดง = แพงขึ้นจากครั้งก่อน · ▼ เขียว = ถูกลง",
+      "ใช้เทียบว่าเปลี่ยนยี่ห้อหรือเปลี่ยนร้านแล้วคุ้มกว่าไหม",
+      "เก็บย้อนหลัง 20 ครั้งต่อรายการ",
     ]},
     { k:"count", t:"📋 นับสต๊อก", body:[
-      "ใช้ตอนปิดร้าน หรือนับใหญ่สิ้นเดือน",
-      "กรอกเฉพาะของที่นับ — ช่องที่เว้นว่างระบบจะไม่แตะ",
-      "ป้ายเขียว/แดง = ผลต่างจากยอดในระบบ (แดง = ของหาย)",
-      "กดบันทึกครั้งเดียวจบ ปรับให้ทุกรายการพร้อมกัน",
+      "ใส่วันที่ ชื่อผู้นับ แล้วกรอกยอดที่นับได้",
+      "ช่องที่เว้นว่างจะไม่ถูกบันทึก กรอกเฉพาะที่นับจริง",
+      "กดบันทึกแล้วจะได้ปุ่มคัดลอกข้อความ และส่งเป็นรูปภาพ",
+      "ส่งให้หัวหน้าทางไลน์ได้ทันที",
+    ]},
+    { k:"order", t:"🛒 สั่งของ", body:[
+      "หลังนับเสร็จ ระบบใส่ของที่ต่ำกว่าขั้นต่ำให้อัตโนมัติ",
+      "กด ＋ − ปรับจำนวน หรือกด ➕ เพิ่มของเอง เพื่อเลือกของอื่น",
+      "จัดกลุ่มตามร้านที่ซื้อให้เลย ส่งให้ลูกน้องไปซื้อได้ทีละร้าน",
+      "คัดลอกเป็นข้อความ หรือส่งเป็นรูป แล้วกดบันทึกใบสั่งของไว้ดูย้อนหลัง",
+    ]},
+    { k:"hist", t:"🕘 ประวัติ", body:[
+      "ดูการนับและใบสั่งของย้อนหลังได้ 18 เดือน",
+      "แตะที่รายการเพื่อดูรายละเอียด และคัดลอก/ส่งรูปซ้ำได้",
+      "เจ้าของลบรายการที่ผิดได้",
     ]},
     { k:"undo", t:"↩︎ ปุ่มเลิกทำ", body:[
-      "กด ↩︎ มุมขวาบน = ย้อนสิ่งที่เพิ่งทำไปล่าสุด",
-      "ย้อนได้สูงสุด 20 ครั้ง ย้อนทีละครั้งจากใหม่ไปเก่า",
-      "เกิน 1 ชั่วโมงแล้วจะย้อนไม่ได้ ตัวเลขข้างปุ่มจะลดลงเอง",
-      "⚠️ ย้อนได้เฉพาะสิ่งที่ทำจากเครื่องนี้ ของที่คนอื่นทำต้องให้เขาย้อนเอง",
-    ]},
-    { k:"report", t:"📊 สรุปและ Excel", body:[
-      "เลือกรายวัน / รายเดือน / รายปี ได้",
-      "ดูได้ว่าของไหนใช้เยอะสุด แยกตามหมวดได้",
-      "ปุ่ม 📥 Export Excel ได้ 3 ชีต: สต๊อกปัจจุบัน · ประวัติ · แยกหมวด",
-      "ตัวเลขเงินเห็นเฉพาะโหมดเจ้าของ",
+      "กด ↩︎ มุมขวาบน = ย้อนสิ่งที่เพิ่งทำล่าสุด",
+      "ย้อนได้ 20 ครั้ง ภายใน 1 ชั่วโมง",
+      "ย้อนได้เฉพาะสิ่งที่ทำจากเครื่องนี้",
     ]},
     { k:"owner", t:"👑 เจ้าของ (ใส่ PIN)", body:[
-      "กดปุ่ม 👤 มุมขวาบน แล้วใส่ PIN",
-      "เห็นราคาทุนและมูลค่าสต๊อกรวม",
-      "เพิ่ม/แก้/ลบ ร้าน หมวด หน่วยนับ และรายการของ",
-      "ลบประวัติเคลื่อนไหวย้อนหลังได้",
-      "กดปุ่มเดิมอีกครั้งเพื่อกลับเป็นโหมดพนักงาน",
-    ]},
-    { k:"data", t:"💾 สำรองข้อมูล", body:[
-      "⚙️ ตั้งค่า → ⬇️ สำรอง = โหลดไฟล์ .json เก็บไว้",
-      "ควรสำรองก่อนแก้ข้อมูลชุดใหญ่ทุกครั้ง",
-      "⬆️ นำเข้า = เอาไฟล์สำรองกลับคืน (ทับของเดิมทั้งร้าน)",
-      "🧹 ลบข้อมูลตัวอย่าง = ลบเฉพาะของที่ระบบสร้างให้ตอนแรก",
-    ]},
-    { k:"trouble", t:"🛟 ปัญหาที่พบบ่อย", body:[
-      "ยอดไม่ตรง → ใช้ ⇄ ปรับยอด หรือแท็บ 📋 นับสต๊อก",
-      "เผลอกดผิด → กด ↩︎ ทันที (ภายใน 1 ชม.)",
-      "หน้าจอค้าง/ข้อมูลเก่า → ปิดแอปแล้วเปิดใหม่",
-      "เห็นแถบส้ม 🧪 โหมดทดลอง = ยังไม่ได้ต่อฐานข้อมูล ข้อมูลจะไม่ซิงก์",
+      "กด 👤 มุมขวาบนแล้วใส่ PIN",
+      "เพิ่ม/แก้/ลบ ร้าน หมวด หน่วยนับ และลบรายการได้",
+      "แต่ละร้านมีสีของตัวเอง เปลี่ยนร้านแล้วสีพื้นหลังเปลี่ยนตาม",
+      "สำรองข้อมูลเป็นไฟล์ .json ได้ในหน้าตั้งค่า",
     ]},
   ];
   return (
@@ -1523,8 +1744,7 @@ function HelpSheet({ onClose, isOwner }) {
               <div style={{ padding:"0 14px 14px", borderTop:"1px solid var(--line)" }}>
                 {sec.body.map((line, i) => (
                   <div key={i} style={{ display:"flex", gap:8, marginTop:10, fontSize:13.5, lineHeight:1.6 }}>
-                    <span style={{ color:"var(--gold)" }}>•</span>
-                    <span style={{ flex:1 }}>{line}</span>
+                    <span style={{ color:"var(--gold)" }}>•</span><span style={{ flex:1 }}>{line}</span>
                   </div>
                 ))}
               </div>
@@ -1535,103 +1755,6 @@ function HelpSheet({ onClose, isOwner }) {
       <div style={{ fontSize:12, color:"var(--muted)", textAlign:"center", marginTop:16, lineHeight:1.7 }}>
         {isOwner ? "👑 ตอนนี้อยู่ในโหมดเจ้าของ" : "👤 ตอนนี้อยู่ในโหมดพนักงาน"}<br/>
         ข้อมูลซิงก์อัตโนมัติทุกเครื่องที่เปิดลิงก์เดียวกัน
-      </div>
-    </Sheet>
-  );
-}
-
-/* ---------- Sheet: รับ-เบิกเร็ว ---------- */
-function QuickMove({ item, onClose, onSave }) {
-  const [type, setType] = useState("out");
-  const [qty, setQty] = useState("1");
-  const [note, setNote] = useState("");
-  const [by, setBy] = useState(LS.get("ps_by") || "");
-
-  const go = () => {
-    const n = Number(qty);
-    if (!n || n <= 0) { alert("ใส่จำนวนให้ถูกต้อง"); return; }
-    LS.set("ps_by", by);
-    onSave({ id:uid(), ts:Date.now(), date:today(), itemId:item.id, type, qty:n,
-      cost:Number(item.cost) || 0, note:note.trim(), by:by.trim() });
-  };
-
-  return (
-    <Sheet title={item.name} onClose={onClose}>
-      <div style={{ textAlign:"center", marginBottom:14 }}>
-        <div className="lbl">คงเหลือปัจจุบัน</div>
-        <div style={{ fontSize:34, fontWeight:600, color:"var(--navy)" }}>{nf(item.qty)} <span style={{ fontSize:16, color:"var(--muted)" }}>{item.unit}</span></div>
-      </div>
-      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-        {["in","out","adj"].map(t => (
-          <button key={t} className="press" onClick={() => setType(t)}
-            style={{ flex:1, padding:"11px 0", borderRadius:12, fontWeight:500,
-              background: type === t ? MOVE_COLOR[t] : "var(--tint)", color: type === t ? "#fff" : "var(--muted)" }}>
-            {t === "in" ? "＋ รับเข้า" : t === "out" ? "－ เบิกออก" : "⇄ ปรับยอด"}
-          </button>
-        ))}
-      </div>
-      <Field label={type === "adj" ? "ยอดจริง" : "จำนวน"}>
-        <div className="row">
-          <button className="btn ghost press" style={{ width:52 }} onClick={() => setQty(String(Math.max(0,(Number(qty)||0)-1)))}>−</button>
-          <input type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)}
-            style={{ textAlign:"center", fontSize:22, fontWeight:600 }} />
-          <button className="btn ghost press" style={{ width:52 }} onClick={() => setQty(String((Number(qty)||0)+1))}>＋</button>
-        </div>
-      </Field>
-      <div className="row" style={{ gap:8 }}>
-        <div style={{ flex:1.4 }}><Field label="หมายเหตุ"><input value={note} onChange={e => setNote(e.target.value)} /></Field></div>
-        <div style={{ flex:1 }}><Field label="ผู้บันทึก"><input value={by} onChange={e => setBy(e.target.value)} /></Field></div>
-      </div>
-      <button className="btn press" style={{ width:"100%" }} onClick={go}>บันทึก</button>
-    </Sheet>
-  );
-}
-
-/* ---------- Sheet: ร้าน ---------- */
-function ShopSheet({ shop, onClose, onSave, onDelete }) {
-  const [f, setF] = useState(() => shop ? { ...shop } : { id:"", name:"", emo:"🏪", logo:"" });
-  const fileRef = useRef(null);
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-
-  const pick = async e => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    set("logo", await compressImg(file, 220, 0.6));
-  };
-
-  return (
-    <Sheet title={shop ? "แก้ไขร้าน" : "เพิ่มร้าน"} onClose={onClose}>
-      <div className="row" style={{ marginBottom:14 }}>
-        <div className="press" onClick={() => fileRef.current && fileRef.current.click()}
-          style={{ width:74, height:74, borderRadius:18, background:"var(--tint)", display:"flex",
-            alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:30, flex:"none" }}>
-          {f.logo ? <img src={f.logo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : f.emo}
-        </div>
-        <div style={{ flex:1, fontSize:12.5, color:"var(--muted)" }}>แตะเพื่อใส่โลโก้ร้าน</div>
-        <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display:"none" }} />
-      </div>
-
-      <Field label="ชื่อร้าน"><input value={f.name} onChange={e => set("name", e.target.value)} placeholder="เช่น Teddy สาขา 2" /></Field>
-      <Field label="รหัสร้าน (อังกฤษ ห้ามซ้ำ ห้ามแก้ทีหลัง)">
-        <input value={f.id} disabled={!!shop} onChange={e => set("id", e.target.value.replace(/[^a-z0-9_]/g, ""))}
-          placeholder="teddy2" />
-      </Field>
-      <Field label="ไอคอน">
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          {["🏪","🧺","🪷","🧋","☕","🧼","💧","🛒"].map(e => (
-            <button key={e} className={"chip press " + (f.emo === e && !f.logo ? "on" : "")}
-              onClick={() => { set("emo", e); set("logo", ""); }} style={{ fontSize:18 }}>{e}</button>
-          ))}
-        </div>
-      </Field>
-
-      <div className="row" style={{ gap:8, marginTop:8 }}>
-        {shop ? <button className="btn danger press" onClick={() => onDelete(shop)}>ลบ</button> : null}
-        <button className="btn press" style={{ flex:1 }} onClick={() => {
-          const id = (f.id || "").trim(), name = (f.name || "").trim();
-          if (!id || !name) { alert("ใส่ชื่อร้านและรหัสร้าน"); return; }
-          onSave({ ...f, id, name });
-        }}>บันทึก</button>
       </div>
     </Sheet>
   );
