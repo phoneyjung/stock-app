@@ -237,11 +237,18 @@ try {
 } catch (e) { console.error(e); }
 
 const LOCAL_MODE = !fbReady;
+let onDbError = null, onDbOk = null;
+const reportErr = (where, e) => {
+  console.error(where, e);
+  if (onDbError) onDbError((e && e.code ? e.code + " — " : "") + (e && e.message ? e.message : String(e)));
+};
+const reportOk = () => { if (onDbOk) onDbOk(Date.now()); };
 const LKEY = p => "psdb:" + p;
 
 async function getDoc(p) {
   if (LOCAL_MODE) { const v = LS.get(LKEY(p)); try { return v ? JSON.parse(v) : null; } catch (e) { return null; } }
-  try { const s = await db.doc(p).get(); return s.exists ? s.data() : null; } catch (e) { console.error(p, e); return null; }
+  try { const s = await db.doc(p).get(); reportOk(); return s.exists ? s.data() : null; }
+  catch (e) { reportErr("อ่าน " + p, e); return null; }
 }
 async function setDoc(p, data) {
   if (LOCAL_MODE) {
@@ -249,11 +256,15 @@ async function setDoc(p, data) {
     LS.set(LKEY(p), JSON.stringify({ ...old, ...data }));
     return true;
   }
-  try { await db.doc(p).set(data, { merge:true }); return true; } catch (e) { console.error(p, e); return false; }
+  try { await db.doc(p).set(data, { merge:true }); reportOk(); return true; }
+  catch (e) { reportErr("เขียน " + p, e); return false; }
 }
 function watchDoc(p, cb) {
   if (LOCAL_MODE) { getDoc(p).then(cb); return () => {}; }
-  return db.doc(p).onSnapshot(s => cb(s.exists ? s.data() : null), e => console.error("watch " + p, e));
+  return db.doc(p).onSnapshot(
+    s => { reportOk(); cb(s.exists ? s.data() : null); },
+    e => reportErr("อ่าน " + p, e)
+  );
 }
 async function txDoc(p, mutate) {
   if (LOCAL_MODE) {
@@ -263,12 +274,16 @@ async function txDoc(p, mutate) {
     return next;
   }
   const ref = db.doc(p);
-  return db.runTransaction(async t => {
-    const s = await t.get(ref);
-    const next = mutate(s.exists ? s.data() : {});
-    t.set(ref, next);
-    return next;
-  });
+  try {
+    const r = await db.runTransaction(async t => {
+      const s = await t.get(ref);
+      const next = mutate(s.exists ? s.data() : {});
+      t.set(ref, next);
+      return next;
+    });
+    reportOk();
+    return r;
+  } catch (e) { reportErr("บันทึก " + p, e); return null; }
 }
 
 /* ---------- ข้อมูลตัวอย่าง ---------- */
@@ -515,6 +530,8 @@ function App() {
     const t = new URLSearchParams(location.search).get("tab");
     return ["stock","count","order","hist","setup"].includes(t) ? t : "stock";
   });
+  const [dbError, setDbError] = useState("");
+  const [lastSync, setLastSync] = useState(0);
   const [canInstall, setCanInstall] = useState(!!window.__pwaPrompt);
   const [hideInstall, setHideInstall] = useState(LS.get("ps_hideinstall") === "1");
 
@@ -546,6 +563,12 @@ function App() {
     const m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", c.head);
   }, [shop]);
+
+  useEffect(() => {
+    onDbError = m => setDbError(m);
+    onDbOk = t => { setLastSync(t); setDbError(""); };
+    return () => { onDbError = null; onDbOk = null; };
+  }, []);
 
   /* ---- ปุ่มติดตั้งแอป ---- */
   useEffect(() => {
@@ -887,6 +910,17 @@ function App() {
         </div>
       )}
 
+      {dbError ? (
+        <div style={{ margin:"10px 16px 0", background:"#FBE5E8", border:"1px solid #E8B6BE",
+          borderRadius:14, padding:"10px 13px", fontSize:12.5, lineHeight:1.6 }}>
+          ⚠️ <b>บันทึกลงฐานข้อมูลไม่สำเร็จ</b> — ข้อมูลจะไม่ไปเครื่องอื่น<br/>
+          <span style={{ color:"var(--muted)", wordBreak:"break-word" }}>{dbError}</span><br/>
+          {/permission|insufficient/i.test(dbError)
+            ? <span>สาเหตุ: Firestore Rules ยังไม่อนุญาต — ดูวิธีแก้ที่ ⚙️ ตั้งค่า → 🔌 การเชื่อมต่อ</span>
+            : <span>ลองเช็กอินเทอร์เน็ต แล้วกดใหม่อีกครั้ง</span>}
+        </div>
+      ) : null}
+
       {canInstall && !hideInstall ? (
         <div className="card" style={{ margin:"10px 16px 0", padding:"10px 12px", display:"flex", gap:10, alignItems:"center" }}>
           <span style={{ fontSize:20 }}>📲</span>
@@ -920,7 +954,7 @@ function App() {
           {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab }} />}
           {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo:logoOf(logos, shopId), saveOrder, say }} />}
           {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, isOwner, say }} />}
-          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, items, photos, logos, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
+          {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, items, photos, logos, online, lastSync, dbError, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
         </>
       )}
 
@@ -1693,7 +1727,7 @@ function orderGroups(order, items) {
 
 /* ---------- TAB 5: ตั้งค่า ---------- */
 function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, items, photos, savePhoto, saveMeta,
-                    logos, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }) {
+                    logos, online, lastSync, dbError, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }) {
   const [newCat, setNewCat] = useState("");
   const [newUnit, setNewUnit] = useState("");
   const [newVendor, setNewVendor] = useState("");
@@ -1837,6 +1871,34 @@ function TabSetup({ shops, shop, saveShops, setShopId, cats, units, vendors, ite
         </div>
         <input ref={impRef} type="file" accept=".json,application/json" style={{ display:"none" }}
           onChange={e => { const f = e.target.files && e.target.files[0]; if (f) importJson(f); e.target.value = ""; }} />
+      </div>
+
+      <div className="card" style={{ padding:14, marginBottom:14 }}>
+        <div style={{ fontWeight:600, marginBottom:10 }}>🔌 การเชื่อมต่อ</div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>โหมด</span>
+          <b style={{ color: LOCAL_MODE ? "var(--red)" : "var(--green)" }}>
+            {LOCAL_MODE ? "🧪 ทดลอง (ไม่ซิงก์)" : online ? "🟢 ออนไลน์" : "⚪ กำลังต่อ"}
+          </b></div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>ฐานข้อมูล</span>
+          <span style={{ fontSize:12.5 }}>{FIREBASE_CONFIG.projectId || "—"}</span></div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>ที่อยู่เว็บ</span>
+          <span style={{ fontSize:11.5, wordBreak:"break-all", textAlign:"right" }}>{location.origin + location.pathname}</span></div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>ร้านที่เปิดอยู่</span>
+          <span style={{ fontSize:12.5 }}>{shop ? shop.id : "—"} · {items.length} รายการ</span></div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>ซิงก์ล่าสุด</span>
+          <span style={{ fontSize:12.5 }}>{lastSync ? new Date(lastSync).toLocaleTimeString("th-TH") : "ยังไม่เคย"}</span></div>
+        {dbError ? <div className="kv"><span style={{ color:"var(--red)" }}>ข้อผิดพลาด</span>
+          <span style={{ fontSize:11.5, color:"var(--red)", textAlign:"right", wordBreak:"break-word" }}>{dbError}</span></div> : null}
+
+        <button className="btn ghost press" style={{ width:"100%", marginTop:10 }} onClick={async () => {
+          if (LOCAL_MODE) { alert("เครื่องนี้อยู่ในโหมดทดลอง\n\nแปลว่าเปิดจากไฟล์ที่ไม่มี firebase-config.js อยู่ข้างๆ\nให้เปิดจาก\nphoneyjung.github.io/stock-app/\nเท่านั้น"); return; }
+          say("กำลังทดสอบ…");
+          const stamp = Date.now();
+          const w = await setDoc("stockApp/diag", { ts: stamp, from: navigator.userAgent.slice(0, 60) });
+          const r = await getDoc("stockApp/diag");
+          if (w && r && r.ts === stamp) alert("✅ เชื่อมต่อปกติ\n\nเขียนและอ่านฐานข้อมูลสำเร็จ\nถ้าอีกเครื่องยังไม่เห็นข้อมูล ให้เช็กว่าเปิดที่อยู่เว็บเดียวกัน และเลือกร้านเดียวกัน");
+          else alert("❌ เขียนฐานข้อมูลไม่สำเร็จ\n\nให้เพิ่ม Firestore Rules ต่อไปนี้:\n\nmatch /stockApp/{d}    { allow read, write: if ok(); }\nmatch /stockItems/{d}  { allow read, write: if ok(); }\nmatch /stockCounts/{d} { allow read, write: if ok(); }\nmatch /stockOrders/{d} { allow read, write: if ok(); }\nmatch /stockPhotos/{d} { allow read, write: if ok(); }");
+        }}>🧪 ทดสอบการเชื่อมต่อ</button>
       </div>
 
       <div className="card" style={{ padding:14 }}>
