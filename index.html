@@ -549,6 +549,7 @@ function App() {
   const [sheet, setSheet] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
   const [orderDraft, setOrderDraft] = useState({});   // { itemId: qty }
+  const [orderVendor, setOrderVendor] = useState({}); // { itemId: ชื่อร้านที่จะไปซื้อ }
 
   const isOwner = role === "owner";
   const shop = useMemo(() => shops.find(s => s.id === shopId) || null, [shops, shopId]);
@@ -609,7 +610,7 @@ function App() {
   /* ---- ข้อมูลร้าน ---- */
   useEffect(() => {
     if (!shopId) return;
-    setLoadingShop(true); setCounts({}); setOrders({}); setOrderDraft({});
+    setLoadingShop(true); setCounts({}); setOrders({}); setOrderDraft({}); setOrderVendor({});
     setUndoStack(readUndo(shopId));
     const mk = monthOf(today());
     const u1 = watchDoc("stockItems/" + shopId, d => {
@@ -808,7 +809,7 @@ function App() {
     await txDoc("stockItems/" + shop.id, cur => ({ ...cur, items: [] }));
     await setDoc("stockPhotos/" + shop.id, { p:{} });
     await clearRecords(shop.id);
-    setItems([]); setCounts({}); setOrders({}); setOrderDraft({});
+    setItems([]); setCounts({}); setOrders({}); setOrderDraft({}); setOrderVendor({});
     writeUndo(shop.id, []);
     say("ล้างข้อมูลร้านนี้แล้ว ✓");
   };
@@ -825,7 +826,7 @@ function App() {
       await setDoc("stockPhotos/" + sh.id, { p:{} });
       await clearRecords(sh.id);
     }
-    setItems([]); setCounts({}); setOrders({}); setOrderDraft({});
+    setItems([]); setCounts({}); setOrders({}); setOrderDraft({}); setOrderVendor({});
     writeUndo(shopId, []);
     say(`ล้างแล้ว ${n} รายการ · ร้านทั้ง ${shops.length} ร้านยังอยู่ ✓`);
   };
@@ -966,7 +967,7 @@ function App() {
         <>
           {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, say }} />}
           {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab }} />}
-          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo:logoOf(logos, shopId), saveOrder, say }} />}
+          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors:vendorList, shop, shopLogo:logoOf(logos, shopId), saveOrder, say }} />}
           {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, isOwner, say }} />}
           {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, saveVendors, items, photos, logos, online, lastSync, dbError, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
         </>
@@ -1176,9 +1177,7 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
                 <div style={{ fontSize:12, marginTop:3 }}>
                   <b style={{ color:"var(--head)" }}>{money(it.price)}</b>
                   <span style={{ color:"var(--muted)" }}>/{it.unit}</span>
-                  {trend ? <span style={{ color: trend.up ? "var(--red)" : "var(--green)", marginLeft:6 }}>
-                    {trend.up ? "▲" : "▼"} {nf(Math.abs(trend.diff))}
-                  </span> : null}
+                  <TrendTag t={trend} />
                 </div>
               </div>
               <div style={{ textAlign:"right", flex:"none" }}>
@@ -1197,18 +1196,34 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
 }
 
 function priceTrend(it) {
-  const ph = (it.ph || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  if (!ph.length) return null;
-  const prev = ph.find(x => Number(x.price) !== Number(it.price));
-  if (!prev) return null;
-  const diff = Number(it.price) - Number(prev.price);
-  if (!diff) return null;
-  return { up: diff > 0, diff, from: prev };
+  const cur = Number(it.price) || 0;
+  if (!cur) return null;
+  // ข้ามประวัติราคา 0 (เกิดจากตอนสร้างรายการที่ยังไม่ได้ใส่ราคา)
+  const hist = (it.ph || []).filter(h => Number(h.price) > 0)
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (!hist.length) return { first: true };
+  const idx = hist.findIndex(h => Number(h.price) === cur);
+  const prev = idx >= 0 ? hist[idx + 1] : hist[0];
+  if (!prev) return { first: true };
+  const diff = cur - Number(prev.price);
+  return { first: false, same: diff === 0, up: diff > 0, diff, from: prev };
+}
+
+function TrendTag({ t, big }) {
+  if (!t) return null;
+  const st = { fontSize: big ? 13 : 12, marginLeft: big ? 8 : 6 };
+  if (t.first) return <span style={{ ...st, color:"var(--muted)" }}>– ราคาแรก</span>;
+  if (t.same)  return <span style={{ ...st, color:"var(--muted)" }}>= เท่าเดิม</span>;
+  return (
+    <span style={{ ...st, color: t.up ? "var(--red)" : "var(--green)" }}>
+      {t.up ? "▲" : "▼"} {nf(Math.abs(t.diff))}{big ? (t.up ? " แพงขึ้น" : " ถูกลง") : ""}
+    </span>
+  );
 }
 
 /* ---------- ดูรายละเอียดของ ---------- */
 function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
-  const ph = (item.ph || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const ph = (item.ph || []).filter(h => Number(h.price) > 0).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const t = priceTrend(item);
   return (
     <Sheet title={item.name} onClose={onClose}>
@@ -1223,9 +1238,7 @@ function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
           <span style={{ color:"var(--muted)" }}>ราคาต่อหน่วย</span>
           <span>
             <b style={{ fontSize:16 }}>{money(item.price)}</b>
-            {t ? <span style={{ color: t.up ? "var(--red)" : "var(--green)", marginLeft:8, fontSize:13 }}>
-              {t.up ? "▲ แพงขึ้น" : "▼ ถูกลง"} {nf(Math.abs(t.diff))}
-            </span> : null}
+            <TrendTag t={t} big />
           </span>
         </div>
         <div className="kv"><span style={{ color:"var(--muted)" }}>ขั้นต่ำที่ควรมี</span><span>{nf(item.min)} {item.unit}</span></div>
@@ -1240,6 +1253,8 @@ function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
         <div style={{ fontWeight:600, padding:"8px 0 2px", fontSize:14 }}>📈 ประวัติราคา</div>
         {!ph.length ? <div style={{ color:"var(--muted)", fontSize:13, padding:"6px 0 12px" }}>
           ยังไม่มีประวัติ — พอแก้ราคา/ยี่ห้อ/ร้านที่ซื้อ ระบบจะเก็บให้อัตโนมัติ
+        </div> : ph.length === 1 ? <div style={{ color:"var(--muted)", fontSize:12.5, padding:"4px 0 8px" }}>
+          ราคาแรกที่บันทึก — ครั้งหน้าที่แก้ราคาจะเทียบให้ว่าขึ้นหรือลง
         </div> : null}
         {ph.map((h, i) => (
           <div key={i} className="kv">
@@ -1281,10 +1296,11 @@ function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave
     if (!f.name.trim()) { alert("ใส่ชื่อของก่อน"); return; }
     const next = { ...f, name:f.name.trim(), brand:(f.brand||"").trim(), detail:(f.detail||"").trim(),
       vendor:(f.vendor||"").trim(), price:Number(f.price)||0, min:Number(f.min)||0 };
-    const changed = !item || Number(item.price) !== next.price || (item.vendor||"") !== next.vendor || (item.brand||"") !== next.brand;
+    const changed = next.price > 0 &&
+      (!item || Number(item.price) !== next.price || (item.vendor||"") !== next.vendor || (item.brand||"") !== next.brand);
     if (changed) {
       next.ph = [{ ts:Date.now(), date:today(), price:next.price, vendor:next.vendor, brand:next.brand },
-                 ...(f.ph || [])].slice(0, 20);
+                 ...(f.ph || []).filter(h => Number(h.price) > 0)].slice(0, 20);
     }
     onSave(next, dirty ? img : undefined);
   };
@@ -1498,7 +1514,7 @@ function CountDone({ session, items, shop, shopLogo, say, onNew, onGoOrder }) {
 }
 
 /* ---------- TAB 3: สั่งของ ---------- */
-function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, shopLogo, saveOrder, say }) {
+function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors, shop, shopLogo, saveOrder, say }) {
   const [by, setBy] = useState(LS.get("ps_by") || "");
   const [note, setNote] = useState("");
   const [pick, setPick] = useState(false);
@@ -1515,20 +1531,40 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, sh
   }, [lowItems]);
 
   const chosen = items.filter(i => Number(orderDraft[i.id]) > 0);
-  const total = chosen.reduce((s, i) => s + Number(orderDraft[i.id]) * (Number(i.price) || 0), 0);
+
+  /* ร้านที่จะไปซื้อของชิ้นนี้ — เปลี่ยนได้รายรายการ */
+  const vendorOf = i => orderVendor[i.id] || i.vendor || "ไม่ระบุร้าน";
+
+  /* ราคาที่เคยซื้อจากร้านนั้น ถ้าไม่เคยซื้อใช้ราคาหลักของรายการ */
+  const priceOf = (i, v) => {
+    const h = (i.ph || []).filter(x => (x.vendor || "ไม่ระบุร้าน") === v && Number(x.price) > 0)
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    return h.length ? Number(h[0].price) : Number(i.price) || 0;
+  };
+
+  /* รายชื่อร้านที่เคยซื้อของชิ้นนี้ จะขึ้นก่อนในตัวเลือก */
+  const vendorsFor = i => {
+    const seen = [];
+    if (i.vendor) seen.push(i.vendor);
+    (i.ph || []).forEach(h => { if (h.vendor && !seen.includes(h.vendor)) seen.push(h.vendor); });
+    const rest = vendors.filter(v => !seen.includes(v));
+    return { seen, rest };
+  };
+
+  const total = chosen.reduce((s, i) => s + Number(orderDraft[i.id]) * priceOf(i, vendorOf(i)), 0);
 
   const groups = useMemo(() => {
     const byVendor = {};
     chosen.forEach(i => {
-      const v = i.vendor || "ไม่ระบุร้าน";
+      const v = vendorOf(i);
       (byVendor[v] = byVendor[v] || []).push({
         left: i.name + (i.brand ? ` (${i.brand})` : ""),
         right: `${nf(orderDraft[i.id])} ${i.unit}`,
-        sub: money(Number(orderDraft[i.id]) * (Number(i.price) || 0))
+        sub: money(Number(orderDraft[i.id]) * priceOf(i, v))
       });
     });
     return Object.entries(byVendor).map(([title, lines]) => ({ title, lines }));
-  }, [chosen, orderDraft]);
+  }, [chosen, orderDraft, orderVendor]);
 
   const head = `${thDate(today())}${by ? " · สั่งโดย: " + by : ""}${note ? " · " + note : ""}`;
   const footer = `รวม ${chosen.length} รายการ · ประมาณ ${money(total)}`;
@@ -1543,7 +1579,8 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, sh
     if (!chosen.length) { say("ยังไม่ได้เลือกของ"); return; }
     LS.set("ps_by", by);
     await saveOrder({ id:uid(), ts:Date.now(), date:today(), by:by.trim(), note:note.trim(), total,
-      lines: chosen.map(i => ({ itemId:i.id, qty:Number(orderDraft[i.id]), price:Number(i.price) || 0, vendor:i.vendor || "" })) });
+      lines: chosen.map(i => ({ itemId:i.id, qty:Number(orderDraft[i.id]),
+        price: priceOf(i, vendorOf(i)), vendor: vendorOf(i) })) });
     say("บันทึกใบสั่งของแล้ว ✓");
   };
 
@@ -1564,7 +1601,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, sh
         <button className="btn ghost press" style={{ flex:1 }} onClick={() => setPick(!pick)}>
           {pick ? "✕ ปิดรายการ" : "➕ เพิ่มของเอง"}
         </button>
-        <button className="btn ghost press" onClick={() => setOrderDraft({})}>ล้าง</button>
+        <button className="btn ghost press" onClick={() => { setOrderDraft({}); setOrderVendor({}); }}>ล้าง</button>
       </div>
 
       {pick ? (
@@ -1602,25 +1639,44 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, shop, sh
         <div key={g.title} style={{ marginBottom:12 }}>
           <div className="sect" style={{ margin:"4px 2px 6px" }}>🏬 {g.title}</div>
           <div className="card" style={{ padding:"4px 12px" }}>
-            {chosen.filter(i => (i.vendor || "ไม่ระบุร้าน") === g.title).map(i => (
-              <div key={i.id} style={{ display:"flex", gap:8, alignItems:"center", padding:"9px 0",
-                borderBottom:"1px solid var(--line)" }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
-                  <div style={{ fontSize:11.5, color:"var(--muted)" }}>
-                    {money(i.price)}/{i.unit}
-                    {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)}` : ""}
+            {chosen.filter(i => vendorOf(i) === g.title).map(i => {
+              const v = vendorOf(i);
+              const p = priceOf(i, v);
+              const other = p !== (Number(i.price) || 0);
+              const vf = vendorsFor(i);
+              return (
+                <div key={i.id} style={{ padding:"9px 0", borderBottom:"1px solid var(--line)" }}>
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
+                      <div style={{ fontSize:11.5, color:"var(--muted)" }}>
+                        <b style={{ color: other ? "var(--gold)" : "var(--muted)" }}>{money(p)}</b>/{i.unit}
+                        {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)}` : ""}
+                        {` · รวม ${money(Number(orderDraft[i.id]) * p)}`}
+                      </div>
+                    </div>
+                    <button className="press" onClick={() => setOrderDraft(p2 => ({ ...p2, [i.id]: Math.max(0, Number(p2[i.id] || 0) - 1) }))}
+                      style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>−</button>
+                    <input type="number" inputMode="decimal" value={orderDraft[i.id]}
+                      onChange={e => setOrderDraft(p2 => ({ ...p2, [i.id]: e.target.value }))}
+                      style={{ width:56, textAlign:"center", fontWeight:600, padding:"7px 4px" }} />
+                    <button className="press" onClick={() => setOrderDraft(p2 => ({ ...p2, [i.id]: Number(p2[i.id] || 0) + 1 }))}
+                      style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>＋</button>
+                  </div>
+                  <div className="row" style={{ gap:6, marginTop:7 }}>
+                    <span style={{ fontSize:11.5, color:"var(--muted)", flex:"none" }}>🏬 ซื้อจาก</span>
+                    <select value={v} onChange={e => setOrderVendor(p2 => ({ ...p2, [i.id]: e.target.value }))}
+                      style={{ padding:"6px 9px", fontSize:13.5 }}>
+                      {vf.seen.map(x => <option key={x} value={x}>{x}{(i.ph || []).some(h => h.vendor === x) ? " ✓เคยซื้อ" : ""}</option>)}
+                      {vf.rest.length ? <optgroup label="ร้านอื่น">
+                        {vf.rest.map(x => <option key={x} value={x}>{x}</option>)}
+                      </optgroup> : null}
+                      <option value="ไม่ระบุร้าน">ไม่ระบุร้าน</option>
+                    </select>
                   </div>
                 </div>
-                <button className="press" onClick={() => setOrderDraft(p => ({ ...p, [i.id]: Math.max(0, Number(p[i.id] || 0) - 1) }))}
-                  style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>−</button>
-                <input type="number" inputMode="decimal" value={orderDraft[i.id]}
-                  onChange={e => setOrderDraft(p => ({ ...p, [i.id]: e.target.value }))}
-                  style={{ width:60, textAlign:"center", fontWeight:600, padding:"7px 4px" }} />
-                <button className="press" onClick={() => setOrderDraft(p => ({ ...p, [i.id]: Number(p[i.id] || 0) + 1 }))}
-                  style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>＋</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
