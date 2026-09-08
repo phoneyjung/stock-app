@@ -86,6 +86,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 .tag{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:500}
 .sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .scrim{position:absolute;inset:0;background:rgba(15,25,40,.45)}
+.sheet-hd{position:sticky;top:-18px;z-index:2;display:flex;align-items:center;gap:10px;
+  background:var(--tint);margin:-18px -16px 12px;padding:16px 16px 12px;
+  border-bottom:1px solid var(--line)}
 .sheet-in{position:relative;background:var(--tint);width:100%;max-width:560px;
   border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom, 0px));
   max-height:calc(90vh - env(safe-area-inset-top, 0px));overflow:auto;animation:up .18s ease}
@@ -486,12 +489,16 @@ function copyText(t, say) {
 function Sheet({ title, onClose, children }) {
   return (
     <div className="sheet">
-      <div className="scrim" onClick={onClose}></div>
+      {/* กดพื้นหลังแล้วไม่ปิด กันกดโดนโดยไม่ตั้งใจ ต้องกดปุ่ม ✕ เท่านั้น */}
+      <div className="scrim"></div>
       <div className="sheet-in">
-        <div className="row" style={{ marginBottom:14 }}>
-          <div style={{ fontWeight:600, fontSize:17, flex:1 }}>{title}</div>
-          <button className="press" onClick={onClose}
-            style={{ width:34, height:34, borderRadius:999, background:"var(--soft)", fontSize:16 }}>✕</button>
+        <div className="sheet-hd">
+          <div style={{ fontWeight:600, fontSize:17, flex:1, minWidth:0 }}>{title}</div>
+          <button className="press" onClick={onClose} aria-label="ปิด"
+            style={{ display:"flex", alignItems:"center", gap:5, padding:"8px 14px", borderRadius:999,
+              background:"var(--soft)", fontSize:13.5, fontWeight:500, color:"var(--head)", flex:"none" }}>
+            ✕ ปิด
+          </button>
         </div>
         {children}
       </div>
