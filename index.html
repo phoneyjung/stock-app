@@ -1183,7 +1183,7 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
                 </div>
                 <div style={{ fontSize:12, marginTop:3 }}>
                   <b style={{ color:"var(--head)" }}>{money(it.price)}</b>
-                  <span style={{ color:"var(--muted)" }}>/{it.unit}</span>
+                  <span style={{ color:"var(--muted)" }}>/{orderUnit(it)}</span>
                   <TrendTag t={trend} />
                 </div>
               </div>
@@ -1239,10 +1239,14 @@ function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
         {item.brand  ? <div className="kv"><span style={{ color:"var(--muted)" }}>ยี่ห้อ</span><b>{item.brand}</b></div> : null}
         {item.detail ? <div className="kv"><span style={{ color:"var(--muted)" }}>รายละเอียด</span><span style={{ textAlign:"right" }}>{item.detail}</span></div> : null}
         <div className="kv"><span style={{ color:"var(--muted)" }}>หมวด</span><span>{item.cat}</span></div>
-        <div className="kv"><span style={{ color:"var(--muted)" }}>หน่วย</span><span>{item.unit}</span></div>
+        <div className="kv"><span style={{ color:"var(--muted)" }}>หน่วยนับ</span><span>{item.unit}</span></div>
+        {packOf(item) ? (
+          <div className="kv"><span style={{ color:"var(--muted)" }}>ซื้อเป็น</span>
+            <b>{item.packUnit} · 1 {item.packUnit} = {nf(item.packSize)} {item.unit}</b></div>
+        ) : null}
         {item.vendor ? <div className="kv"><span style={{ color:"var(--muted)" }}>ซื้อจาก</span><b>{item.vendor}</b></div> : null}
         <div className="kv">
-          <span style={{ color:"var(--muted)" }}>ราคาต่อหน่วย</span>
+          <span style={{ color:"var(--muted)" }}>ราคาต่อ 1 {orderUnit(item)}</span>
           <span>
             <b style={{ fontSize:16 }}>{money(item.price)}</b>
             <TrendTag t={t} big />
@@ -1286,7 +1290,7 @@ function ItemView({ item, photo, latest, isOwner, onClose, onEdit, onOrder }) {
 function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave, onDelete }) {
   const [f, setF] = useState(() => item ? { ...item } : {
     id:uid(), name:"", brand:"", detail:"", cat:cats[0] || "", unit:units[0] || "ชิ้น",
-    price:0, min:0, vendor:"", ph:[]
+    packUnit:"", packSize:0, price:0, min:0, vendor:"", ph:[]
   });
   const [img, setImg] = useState(photo || null);
   const [dirty, setDirty] = useState(false);
@@ -1301,8 +1305,10 @@ function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave
 
   const submit = () => {
     if (!f.name.trim()) { alert("ใส่ชื่อของก่อน"); return; }
+    if (f.packUnit && Number(f.packSize) < 2) { alert(`ใส่ว่า 1 ${f.packUnit} มีกี่${f.unit}`); return; }
     const next = { ...f, name:f.name.trim(), brand:(f.brand||"").trim(), detail:(f.detail||"").trim(),
-      vendor:(f.vendor||"").trim(), price:Number(f.price)||0, min:Number(f.min)||0 };
+      vendor:(f.vendor||"").trim(), price:Number(f.price)||0, min:Number(f.min)||0,
+      packUnit: f.packUnit || "", packSize: f.packUnit ? Number(f.packSize) || 0 : 0 };
     const changed = next.price > 0 &&
       (!item || Number(item.price) !== next.price || (item.vendor||"") !== next.vendor || (item.brand||"") !== next.brand);
     if (changed) {
@@ -1337,9 +1343,29 @@ function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave
         <div style={{ flex:1 }}><Field label="หมวด">
           <select value={f.cat} onChange={e => set("cat", e.target.value)}>{cats.map(c => <option key={c} value={c}>{c}</option>)}</select>
         </Field></div>
-        <div style={{ flex:1 }}><Field label="หน่วยนับ">
+        <div style={{ flex:1 }}><Field label="หน่วยนับ" hint="ตอนนับสต๊อก">
           <select value={f.unit} onChange={e => set("unit", e.target.value)}>{units.map(u => <option key={u} value={u}>{u}</option>)}</select>
         </Field></div>
+      </div>
+
+      <div style={{ background:"var(--soft)", borderRadius:14, padding:"12px 12px 4px", marginBottom:12 }}>
+        <Field label="ซื้อเป็นแพ็ค / ลัง หรือไม่" hint={`นับเป็น${f.unit} แต่ซื้อเป็นลัง`}>
+          <select value={f.packUnit || ""} onChange={e => set("packUnit", e.target.value)}>
+            <option value="">ไม่ใช้ — ซื้อเป็น{f.unit}เหมือนตอนนับ</option>
+            {units.filter(u => u !== f.unit).map(u => <option key={u} value={u}>ซื้อเป็น{u}</option>)}
+          </select>
+        </Field>
+        {f.packUnit ? (
+          <Field label={`1 ${f.packUnit} มีกี่${f.unit}`}>
+            <input type="number" inputMode="numeric" value={f.packSize || ""}
+              onChange={e => set("packSize", e.target.value)} placeholder="เช่น 48" />
+            {Number(f.packSize) > 1 ? (
+              <div style={{ fontSize:12, color:"var(--head)", marginTop:6, fontWeight:500 }}>
+                ✓ 1 {f.packUnit} = {nf(f.packSize)} {f.unit} · นับเป็น{f.unit} · สั่งเป็น{f.packUnit}
+              </div>
+            ) : null}
+          </Field>
+        ) : null}
       </div>
       <Field label="ซื้อจากที่ไหน" hint="พิมพ์เอง หรือกดเลือกจากที่เคยใช้">
         <input value={f.vendor} onChange={e => set("vendor", e.target.value)} placeholder="เช่น แม็คโคร / ร้านเคมีภัณฑ์" />
@@ -1353,9 +1379,9 @@ function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave
         ) : null}
       </Field>
       <div className="row" style={{ gap:8 }}>
-        <div style={{ flex:1 }}><Field label="ราคาต่อหน่วย (บาท)">
+        <div style={{ flex:1 }}><Field label={`ราคาต่อ 1 ${f.packUnit && Number(f.packSize) > 1 ? f.packUnit : f.unit}`}>
           <input type="number" inputMode="decimal" value={f.price} onChange={e => set("price", e.target.value)} /></Field></div>
-        <div style={{ flex:1 }}><Field label="ขั้นต่ำที่ควรมี">
+        <div style={{ flex:1 }}><Field label={`ขั้นต่ำที่ควรมี (${f.unit})`}>
           <input type="number" inputMode="decimal" value={f.min} onChange={e => set("min", e.target.value)} /></Field></div>
       </div>
       <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:14, lineHeight:1.6 }}>
@@ -1563,7 +1589,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
       const v = vendorOf(i);
       (byVendor[v] = byVendor[v] || []).push({
         left: i.name + (i.brand ? ` (${i.brand})` : ""),
-        right: `${nf(orderDraft[i.id])} ${i.unit}`,
+        right: qtyLabel(i, orderDraft[i.id]),
         sub: money(Number(orderDraft[i.id]) * priceOf(i, v))
       });
     });
@@ -1661,8 +1687,8 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
                       <div style={{ fontSize:11.5, color:"var(--muted)" }}>
-                        <b style={{ color: other ? "var(--gold)" : "var(--muted)" }}>{money(p)}</b>/{i.unit}
-                        {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)}` : " · ยังไม่เคยนับ"}
+                        <b style={{ color: other ? "var(--gold)" : "var(--muted)" }}>{money(p)}</b>/{orderUnit(i)}
+                        {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)} ${i.unit}` : " · ยังไม่เคยนับ"}
                         {Number(i.min) > 0 ? ` · ขั้นต่ำ ${nf(i.min)}` : ""}
                         {` · รวม ${money(Number(orderDraft[i.id]) * p)}`}
                       </div>
@@ -1675,6 +1701,11 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
                     <button className="press" onClick={() => setOrderDraft(p2 => ({ ...p2, [i.id]: Number(p2[i.id] || 0) + 1 }))}
                       style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>＋</button>
                   </div>
+                  {packOf(i) ? (
+                    <div style={{ fontSize:11.5, color:"var(--head)", marginTop:5, fontWeight:500 }}>
+                      = {nf(toCountQty(i, orderDraft[i.id]))} {i.unit} ({nf(orderDraft[i.id])} {i.packUnit})
+                    </div>
+                  ) : null}
                   <div className="row" style={{ gap:6, marginTop:7 }}>
                     <span style={{ fontSize:11.5, color:"var(--muted)", flex:"none" }}>🏬 ซื้อจาก</span>
                     <select value={v} onChange={e => setOrderVendor(p2 => ({ ...p2, [i.id]: e.target.value }))}
@@ -1796,10 +1827,25 @@ function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, 
   );
 }
 
+/* ถ้าตั้งค่าซื้อเป็นแพ็ค/ลัง จะคืนขนาดแพ็ค ไม่งั้นคืน null */
+function packOf(i) {
+  const n = Number(i.packSize) || 0;
+  return (n > 1 && i.packUnit) ? { size:n, unit:i.packUnit } : null;
+}
+const orderUnit = i => { const p = packOf(i); return p ? p.unit : i.unit; };
+/* แปลงจำนวนที่สั่ง (หน่วยซื้อ) เป็นหน่วยนับ */
+const toCountQty = (i, q) => { const p = packOf(i); return p ? Number(q) * p.size : Number(q); };
+const qtyLabel = (i, q) => {
+  const p = packOf(i);
+  return `${nf(q)} ${orderUnit(i)}` + (p ? ` (${nf(toCountQty(i, q))} ${i.unit})` : "");
+};
+
 /* จำนวนที่แนะนำ = เติมให้พอถึงขั้นต่ำ (อย่างน้อย 1) */
 function suggestQty(i, latest) {
   const cur = latest.map[i.id] ? Number(latest.map[i.id].qty) : 0;
-  return Math.max(Math.ceil((Number(i.min) || 0) - cur), 1);
+  const need = (Number(i.min) || 0) - cur;           // ขาดอยู่กี่หน่วยนับ
+  const p = packOf(i);
+  return Math.max(Math.ceil(p ? need / p.size : need), 1);   // ปัดขึ้นเป็นจำนวนลัง/แพ็ค
 }
 
 function orderGroups(order, items) {
@@ -1808,7 +1854,7 @@ function orderGroups(order, items) {
     const it = items.find(x => x.id === l.itemId);
     const name = it ? it.name + (it.brand ? ` (${it.brand})` : "") : "(ลบแล้ว)";
     const v = l.vendor || (it && it.vendor) || "ไม่ระบุร้าน";
-    (byVendor[v] = byVendor[v] || []).push({ left:name, right:`${nf(l.qty)} ${it ? it.unit : ""}` });
+    (byVendor[v] = byVendor[v] || []).push({ left:name, right: it ? qtyLabel(it, l.qty) : nf(l.qty) });
   });
   return Object.entries(byVendor).map(([title, lines]) => ({ title, lines }));
 }
