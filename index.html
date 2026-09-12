@@ -1530,10 +1530,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
   useEffect(() => {
     if (Object.keys(orderDraft).length) return;
     const d = {};
-    lowItems.forEach(i => {
-      const cur = latest.map[i.id] ? Number(latest.map[i.id].qty) : 0;
-      d[i.id] = Math.max(Math.ceil(Number(i.min) * 2 - cur), 1);
-    });
+    lowItems.forEach(i => { d[i.id] = suggestQty(i, latest); });
     if (Object.keys(d).length) setOrderDraft(d);
   }, [lowItems]);
 
@@ -1602,12 +1599,19 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
           <Stat label="เลือกแล้ว" value={chosen.length} sub="รายการ" />
           <Stat label="ราคาประมาณ" value={money(total)} color="var(--gold)" />
         </div>
+        <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:9, lineHeight:1.6 }}>
+          💡 จำนวนที่ขึ้นให้อัตโนมัติ = <b>ขั้นต่ำ − ที่เหลือ</b> (เติมให้พอถึงขั้นต่ำ) ปรับเพิ่มลดได้ตามต้องการ
+        </div>
       </div>
 
       <div style={{ display:"flex", gap:8, marginBottom:12 }}>
         <button className="btn ghost press" style={{ flex:1 }} onClick={() => setPick(!pick)}>
           {pick ? "✕ ปิดรายการ" : "➕ เพิ่มของเอง"}
         </button>
+        <button className="btn ghost press" onClick={() => {
+          const d = {}; lowItems.forEach(i => { d[i.id] = suggestQty(i, latest); });
+          setOrderDraft(d); say(`ใส่ค่าแนะนำ ${Object.keys(d).length} รายการ`);
+        }}>↺ ค่าแนะนำ</button>
         <button className="btn ghost press" onClick={() => { setOrderDraft({}); setOrderVendor({}); }}>ล้าง</button>
       </div>
 
@@ -1658,7 +1662,8 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
                       <div style={{ fontSize:14, fontWeight:500 }}>{i.name}</div>
                       <div style={{ fontSize:11.5, color:"var(--muted)" }}>
                         <b style={{ color: other ? "var(--gold)" : "var(--muted)" }}>{money(p)}</b>/{i.unit}
-                        {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)}` : ""}
+                        {latest.map[i.id] ? ` · เหลือ ${nf(latest.map[i.id].qty)}` : " · ยังไม่เคยนับ"}
+                        {Number(i.min) > 0 ? ` · ขั้นต่ำ ${nf(i.min)}` : ""}
                         {` · รวม ${money(Number(orderDraft[i.id]) * p)}`}
                       </div>
                     </div>
@@ -1789,6 +1794,12 @@ function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, 
       </div>
     </div>
   );
+}
+
+/* จำนวนที่แนะนำ = เติมให้พอถึงขั้นต่ำ (อย่างน้อย 1) */
+function suggestQty(i, latest) {
+  const cur = latest.map[i.id] ? Number(latest.map[i.id].qty) : 0;
+  return Math.max(Math.ceil((Number(i.min) || 0) - cur), 1);
 }
 
 function orderGroups(order, items) {
