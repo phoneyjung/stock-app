@@ -107,6 +107,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 .kv:last-child{border-bottom:none}
 .empty{text-align:center;color:var(--muted);padding:36px 20px;font-size:14px}
 .emptypic{width:140px;height:140px;object-fit:contain;opacity:.92;margin:0 auto 6px;display:block;border-radius:20px}
+.swipe{position:relative;overflow:hidden;border-radius:18px}
+.swipe-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;font-size:13.5;font-weight:500;color:#fff;border-radius:18px}
+.swipe-fg{position:relative;transition:transform .16s ease;will-change:transform;touch-action:pan-y}
 .sect{font-weight:600;font-size:13px;color:var(--muted);margin:16px 16px 7px}
 </style>
 </head>
@@ -513,6 +517,52 @@ function Field({ label, hint, children }) {
     </div>
   );
 }
+/* ปัดขวา = แก้ไข · ปัดซ้าย = ลบ */
+function SwipeRow({ onEdit, onDelete, children }) {
+  const [dx, setDx] = useState(0);
+  const st = useRef(null);
+  const LIMIT = 96, TRIG = 66;
+
+  const down = e => {
+    const t = e.touches ? e.touches[0] : e;
+    st.current = { x:t.clientX, y:t.clientY, lock:null };
+  };
+  const move = e => {
+    if (!st.current) return;
+    const t = e.touches ? e.touches[0] : e;
+    const ax = t.clientX - st.current.x, ay = t.clientY - st.current.y;
+    if (st.current.lock === null) {
+      if (Math.abs(ax) < 8 && Math.abs(ay) < 8) return;
+      st.current.lock = Math.abs(ax) > Math.abs(ay) ? "x" : "y";
+    }
+    if (st.current.lock !== "x") return;
+    let v = ax;
+    if (v > 0 && !onEdit) v = 0;
+    if (v < 0 && !onDelete) v = 0;
+    setDx(Math.max(-LIMIT, Math.min(LIMIT, v)));
+  };
+  const up = () => {
+    const v = dx;
+    setDx(0);
+    st.current = null;
+    if (v >= TRIG && onEdit) onEdit();
+    else if (v <= -TRIG && onDelete) onDelete();
+  };
+
+  return (
+    <div className="swipe">
+      <div className="swipe-bg" style={{ background: dx > 0 ? "var(--head)" : dx < 0 ? "var(--red)" : "transparent" }}>
+        <span style={{ opacity: dx > 0 ? 1 : 0 }}>✏️ แก้ไข</span>
+        <span style={{ opacity: dx < 0 ? 1 : 0 }}>🗑 ลบ</span>
+      </div>
+      <div className="swipe-fg" style={{ transform:`translateX(${dx}px)` }}
+        onTouchStart={down} onTouchMove={move} onTouchEnd={up} onTouchCancel={up}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function Stat({ label, value, sub, color }) {
   return (
     <div className="card" style={{ padding:"12px 14px", flex:1, minWidth:0 }}>
@@ -557,6 +607,7 @@ function App() {
   const [undoStack, setUndoStack] = useState([]);
   const [orderDraft, setOrderDraft] = useState({});   // { itemId: qty }
   const [orderVendor, setOrderVendor] = useState({}); // { itemId: ชื่อร้านที่จะไปซื้อ }
+  const [editRec, setEditRec] = useState(null);      // รายการย้อนหลังที่กำลังแก้
 
   const isOwner = role === "owner";
   const shop = useMemo(() => shops.find(s => s.id === shopId) || null, [shops, shopId]);
@@ -706,14 +757,18 @@ function App() {
 
   const saveCount = async session => {
     const mk = monthOf(session.date);
-    setCounts(p => ({ ...p, [mk]: [session, ...(p[mk] || [])] }));
-    await txDoc(`stockCounts/${shopId}_${mk}`, cur => ({ list: [session, ...(cur.list || [])] }));
+    setCounts(p => ({ ...p, [mk]: [session, ...(p[mk] || []).filter(x => x.id !== session.id)] }));
+    await txDoc(`stockCounts/${shopId}_${mk}`, cur => ({
+      list: [session, ...(cur.list || []).filter(x => x.id !== session.id)]
+    }));
     pushUndo({ kind:"count", label:`บันทึกการนับ ${thDate(session.date)}`, mk, sid:session.id });
   };
   const saveOrder = async order => {
     const mk = monthOf(order.date);
-    setOrders(p => ({ ...p, [mk]: [order, ...(p[mk] || [])] }));
-    await txDoc(`stockOrders/${shopId}_${mk}`, cur => ({ list: [order, ...(cur.list || [])] }));
+    setOrders(p => ({ ...p, [mk]: [order, ...(p[mk] || []).filter(x => x.id !== order.id)] }));
+    await txDoc(`stockOrders/${shopId}_${mk}`, cur => ({
+      list: [order, ...(cur.list || []).filter(x => x.id !== order.id)]
+    }));
     pushUndo({ kind:"order", label:`บันทึกใบสั่งของ ${thDate(order.date)}`, mk, sid:order.id });
   };
   const delRecord = async (type, mk, id) => {
@@ -728,6 +783,23 @@ function App() {
     if (store[mk]) return;
     const d = await getDoc(`${type === "count" ? "stockCounts" : "stockOrders"}/${shopId}_${mk}`);
     (type === "count" ? setCounts : setOrders)(p => ({ ...p, [mk]: (d && d.list) || [] }));
+  };
+
+  const onDeleteItem = async it => {
+    if (!confirm(`ลบ ${it.name}\n\nลบถาวร ยืนยัน?`)) return;
+    await removeItem(it.id, "ลบ " + it.name);
+    await savePhoto(it.id, null);
+    say("ลบแล้ว · กด ↩︎ เพื่อย้อนกลับได้");
+  };
+
+  const openEdit = (kind, r) => {
+    if (kind === "count") { setEditRec({ kind:"count", rec:r }); setTab("count"); say("แก้ไขการนับ " + thDate(r.date)); }
+    else {
+      const d = {}, v = {};
+      (r.lines || []).forEach(l => { d[l.itemId] = l.qty; if (l.vendor) v[l.itemId] = l.vendor; });
+      setOrderDraft(d); setOrderVendor(v);
+      setEditRec({ kind:"order", rec:r }); setTab("order"); say("แก้ไขใบสั่งของ " + thDate(r.date));
+    }
   };
 
   const undoLast = async () => {
@@ -972,10 +1044,10 @@ function App() {
         </div>
       ) : (
         <>
-          {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, say }} />}
-          {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab }} />}
-          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors:vendorList, shop, shopLogo:logoOf(logos, shopId), saveOrder, say }} />}
-          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, isOwner, say }} />}
+          {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, onDeleteItem, say }} />}
+          {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab, editRec, setEditRec }} />}
+          {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors:vendorList, shop, shopLogo:logoOf(logos, shopId), saveOrder, say, editRec, setEditRec }} />}
+          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, openEdit, isOwner, say }} />}
           {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, saveVendors, items, photos, logos, online, lastSync, dbError, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
         </>
       )}
@@ -1115,7 +1187,7 @@ function Header({ shop, shops, logos, setShopId, isOwner, onRole, onHelp, onUndo
 }
 
 /* ---------- TAB 1: รายการของ ---------- */
-function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, say }) {
+function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, onDeleteItem, say }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("*");
   const [onlyLow, setOnlyLow] = useState(false);
@@ -1156,6 +1228,9 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
 
       <div style={{ padding:"0 16px 10px" }}>
         <button className="btn press" style={{ width:"100%" }} onClick={() => setSheet({ type:"item", data:null })}>➕ เพิ่มรายการใหม่</button>
+        <div style={{ fontSize:11.5, color:"var(--muted)", textAlign:"center", marginTop:8 }}>
+          👉 ปัดขวาเพื่อแก้ไข{isOwner ? " · 👈 ปัดซ้ายเพื่อลบ" : ""}
+        </div>
       </div>
 
       {!list.length ? (
@@ -1171,7 +1246,9 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
           const low = lowItems.some(x => x.id === it.id);
           const trend = priceTrend(it);
           return (
-            <div key={it.id} className="card press" onClick={() => setSheet({ type:"view", data:it })}
+            <SwipeRow key={it.id} onEdit={() => setSheet({ type:"item", data:it })}
+              onDelete={isOwner ? () => onDeleteItem(it) : null}>
+            <div className="card press" onClick={() => setSheet({ type:"view", data:it })}
               style={{ padding:11, display:"flex", gap:11, alignItems:"center", borderColor: low ? "#EFC3C9" : "var(--line)" }}>
               {photos[it.id] ? <img className="thumb" src={photos[it.id]} alt="" /> : <div className="thumb">📦</div>}
               <div style={{ flex:1, minWidth:0 }}>
@@ -1195,6 +1272,7 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
                 {Number(it.min) > 0 ? <div style={{ fontSize:10, color:"var(--muted)" }}>ขั้นต่ำ {nf(it.min)}</div> : null}
               </div>
             </div>
+            </SwipeRow>
           );
         })}
       </div>
@@ -1397,13 +1475,22 @@ function ItemSheet({ item, cats, units, vendors, isOwner, photo, onClose, onSave
 }
 
 /* ---------- TAB 2: นับสต๊อก ---------- */
-function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say, setTab }) {
+function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say, setTab, editRec, setEditRec }) {
   const [vals, setVals] = useState({});
   const [by, setBy] = useState(LS.get("ps_by") || "");
   const [date, setDate] = useState(today());
   const [note, setNote] = useState("");
   const [cat, setCat] = useState("*");
   const [done, setDone] = useState(null);
+  const [editId, setEditId] = useState("");
+
+  useEffect(() => {
+    if (!editRec || editRec.kind !== "count") return;
+    const r = editRec.rec, v = {};
+    (r.lines || []).forEach(l => { v[l.itemId] = String(l.qty); });
+    setVals(v); setDate(r.date); setBy(r.by || ""); setNote(r.note || ""); setEditId(r.id);
+    setDone(null); setEditRec(null);
+  }, [editRec]);
 
   const list = useMemo(() => {
     let r = items.slice();
@@ -1417,11 +1504,11 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
     const lines = items.filter(i => vals[i.id] !== undefined && vals[i.id] !== "")
       .map(i => ({ itemId:i.id, qty:Number(vals[i.id]) }));
     if (!lines.length) { say("ยังไม่ได้กรอกยอดเลย"); return; }
-    if (!confirm(`บันทึกการนับ ${lines.length} รายการ วันที่ ${thDate(date)} ?`)) return;
+    if (!confirm(`${editId ? "แก้ไขการนับเดิม" : "บันทึกการนับ"} ${lines.length} รายการ วันที่ ${thDate(date)} ?`)) return;
     LS.set("ps_by", by);
-    const session = { id:uid(), ts:Date.now(), date, by:by.trim(), note:note.trim(), lines };
+    const session = { id: editId || uid(), ts:Date.now(), date, by:by.trim(), note:note.trim(), lines };
     await saveCount(session);
-    setDone(session); setVals({}); setNote("");
+    setDone(session); setVals({}); setNote(""); setEditId("");
   };
 
   if (done) return <CountDone session={done} items={items} shop={shop} shopLogo={shopLogo} say={say}
@@ -1429,6 +1516,14 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
 
   return (
     <div style={{ padding:"14px 0 0" }}>
+      {editId ? (
+        <div style={{ margin:"0 16px 12px", background:"#FFF3E2", border:"1px solid #F0D9B4",
+          borderRadius:14, padding:"10px 13px", fontSize:12.5, display:"flex", gap:10, alignItems:"center" }}>
+          <span style={{ flex:1 }}>✏️ กำลังแก้ไขการนับของวันที่ <b>{thDate(date)}</b> — บันทึกแล้วจะทับของเดิม</span>
+          <button className="chip press" onClick={() => { setEditId(""); setVals({}); setNote(""); }}>ยกเลิก</button>
+        </div>
+      ) : null}
+
       <div style={{ padding:"0 16px 12px" }}>
         <div className="card" style={{ padding:13 }}>
           <div className="row" style={{ gap:8 }}>
@@ -1475,7 +1570,7 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
 
       <div style={{ padding:"14px 16px 0" }}>
         <button className="btn gold press" style={{ width:"100%" }} onClick={submit}>
-          ✅ บันทึกผลนับ {filled ? `(${filled} รายการ)` : ""}
+          {editId ? "💾 บันทึกทับของเดิม" : "✅ บันทึกผลนับ"} {filled ? `(${filled} รายการ)` : ""}
         </button>
       </div>
     </div>
@@ -1547,18 +1642,36 @@ function CountDone({ session, items, shop, shopLogo, say, onNew, onGoOrder }) {
 }
 
 /* ---------- TAB 3: สั่งของ ---------- */
-function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors, shop, shopLogo, saveOrder, say }) {
+function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors, shop, shopLogo, saveOrder, say, editRec, setEditRec }) {
   const [by, setBy] = useState(LS.get("ps_by") || "");
   const [note, setNote] = useState("");
   const [pick, setPick] = useState(false);
-  const [q, setQ] = useState("");
+  const [editId, setEditId] = useState("");
+  const [touched, setTouched] = useState({});   // รายการที่ผู้ใช้ปรับจำนวนเอง
 
   useEffect(() => {
-    if (Object.keys(orderDraft).length) return;
-    const d = {};
-    lowItems.forEach(i => { d[i.id] = suggestQty(i, latest); });
-    if (Object.keys(d).length) setOrderDraft(d);
-  }, [lowItems]);
+    if (!editRec || editRec.kind !== "order") return;
+    const r = editRec.rec;
+    setBy(r.by || ""); setNote(r.note || ""); setEditId(r.id);
+    setTouched(Object.fromEntries((r.lines || []).map(l => [l.itemId, true])));
+    setEditRec(null);
+  }, [editRec]);
+  const [q, setQ] = useState("");
+
+  /* เติมค่าแนะนำให้อัตโนมัติ และคำนวณใหม่เมื่อข้อมูลของเปลี่ยน
+     (เช่น เพิ่งตั้งค่า 1 ลัง = 48 กระป๋อง) — ยกเว้นรายการที่ผู้ใช้แก้เอง */
+  useEffect(() => {
+    setOrderDraft(prev => {
+      const next = { ...prev };
+      let changed = false;
+      lowItems.forEach(i => {
+        if (touched[i.id]) return;
+        const q = suggestQty(i, latest);
+        if (Number(next[i.id]) !== q) { next[i.id] = q; changed = true; }
+      });
+      return changed ? next : prev;
+    });
+  }, [items, latest, lowItems, touched]);
 
   const chosen = items.filter(i => Number(orderDraft[i.id]) > 0);
 
@@ -1608,10 +1721,11 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
   const save = async () => {
     if (!chosen.length) { say("ยังไม่ได้เลือกของ"); return; }
     LS.set("ps_by", by);
-    await saveOrder({ id:uid(), ts:Date.now(), date:today(), by:by.trim(), note:note.trim(), total,
+    await saveOrder({ id: editId || uid(), ts:Date.now(), date: editId ? (editRec && editRec.rec ? editRec.rec.date : today()) : today(),
+      by:by.trim(), note:note.trim(), total,
       lines: chosen.map(i => ({ itemId:i.id, qty:Number(orderDraft[i.id]),
         price: priceOf(i, vendorOf(i)), vendor: vendorOf(i) })) });
-    say("บันทึกใบสั่งของแล้ว ✓");
+    setEditId(""); say(editId ? "แก้ไขใบสั่งของแล้ว ✓" : "บันทึกใบสั่งของแล้ว ✓");
   };
 
   return (
@@ -1636,9 +1750,12 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
         </button>
         <button className="btn ghost press" onClick={() => {
           const d = {}; lowItems.forEach(i => { d[i.id] = suggestQty(i, latest); });
-          setOrderDraft(d); say(`ใส่ค่าแนะนำ ${Object.keys(d).length} รายการ`);
+          setTouched({}); setOrderDraft(d); say(`คำนวณใหม่ ${Object.keys(d).length} รายการ`);
         }}>↺ ค่าแนะนำ</button>
-        <button className="btn ghost press" onClick={() => { setOrderDraft({}); setOrderVendor({}); }}>ล้าง</button>
+        <button className="btn ghost press" onClick={() => {
+          setTouched(Object.fromEntries(lowItems.map(i => [i.id, true])));
+          setOrderDraft({}); setOrderVendor({});
+        }}>ล้าง</button>
       </div>
 
       {pick ? (
@@ -1648,9 +1765,10 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
             {searchList.map(i => {
               const on = Number(orderDraft[i.id]) > 0;
               return (
-                <button key={i.id} className="press" onClick={() => setOrderDraft(p => {
-                  const n = { ...p }; if (on) delete n[i.id]; else n[i.id] = 1; return n;
-                })} style={{ textAlign:"left", padding:"9px 11px", borderRadius:12,
+                <button key={i.id} className="press" onClick={() => {
+                  setTouched(t => ({ ...t, [i.id]:true }));
+                  setOrderDraft(p => { const n = { ...p }; if (on) delete n[i.id]; else n[i.id] = 1; return n; });
+                }} style={{ textAlign:"left", padding:"9px 11px", borderRadius:12,
                   border:"1px solid " + (on ? "var(--head)" : "var(--line)"), background: on ? "var(--soft)" : "#fff",
                   display:"flex", gap:8, alignItems:"center" }}>
                   <span style={{ flex:1, fontSize:13.5 }}>{i.name}
@@ -1693,12 +1811,15 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
                         {` · รวม ${money(Number(orderDraft[i.id]) * p)}`}
                       </div>
                     </div>
-                    <button className="press" onClick={() => setOrderDraft(p2 => ({ ...p2, [i.id]: Math.max(0, Number(p2[i.id] || 0) - 1) }))}
+                    <button className="press" onClick={() => { setTouched(t => ({ ...t, [i.id]:true }));
+                      setOrderDraft(p2 => ({ ...p2, [i.id]: Math.max(0, Number(p2[i.id] || 0) - 1) })); }}
                       style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>−</button>
                     <input type="number" inputMode="decimal" value={orderDraft[i.id]}
-                      onChange={e => setOrderDraft(p2 => ({ ...p2, [i.id]: e.target.value }))}
+                      onChange={e => { setTouched(t => ({ ...t, [i.id]:true }));
+                        setOrderDraft(p2 => ({ ...p2, [i.id]: e.target.value })); }}
                       style={{ width:56, textAlign:"center", fontWeight:600, padding:"7px 4px" }} />
-                    <button className="press" onClick={() => setOrderDraft(p2 => ({ ...p2, [i.id]: Number(p2[i.id] || 0) + 1 }))}
+                    <button className="press" onClick={() => { setTouched(t => ({ ...t, [i.id]:true }));
+                      setOrderDraft(p2 => ({ ...p2, [i.id]: Number(p2[i.id] || 0) + 1 })); }}
                       style={{ width:34, height:34, borderRadius:10, background:"var(--soft)" }}>＋</button>
                   </div>
                   {packOf(i) ? (
@@ -1735,7 +1856,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
               color: colorOf(shop && shop.color).head, logo: shopLogo }), `order-${today()}.png`, say)}>
             🖼 ส่งเป็นรูปภาพ
           </button>
-          <button className="btn ghost press" onClick={save}>💾 บันทึกใบสั่งของ</button>
+          <button className="btn ghost press" onClick={save}>{editId ? "💾 บันทึกทับใบเดิม" : "💾 บันทึกใบสั่งของ"}</button>
         </div>
       ) : null}
     </div>
@@ -1743,7 +1864,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
 }
 
 /* ---------- TAB 4: ประวัติ ---------- */
-function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, isOwner, say }) {
+function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, openEdit, isOwner, say }) {
   const [kind, setKind] = useState("count");
   const [mk, setMk] = useState(monthOf(today()));
   const [openId, setOpenId] = useState("");
@@ -1764,7 +1885,11 @@ function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, 
         {lastMonths(18).map(m => <option key={m} value={m}>{THMON[+m.slice(5)-1]} {+m.slice(0,4)+543}</option>)}
       </select>
 
-      {!list.length ? <div className="empty">ไม่มีข้อมูลเดือนนี้</div> : null}
+      {!list.length ? <div className="empty">ไม่มีข้อมูลเดือนนี้</div> : (
+        <div style={{ fontSize:11.5, color:"var(--muted)", textAlign:"center", marginBottom:9 }}>
+          👉 ปัดขวาเพื่อแก้ไข · 👈 ปัดซ้ายเพื่อลบ
+        </div>
+      )}
 
       <div style={{ display:"grid", gap:8 }}>
         {list.map(r => {
@@ -1774,8 +1899,13 @@ function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, 
           const footer = kind === "count"
             ? `รวม ${(r.lines || []).length} รายการ`
             : `รวม ${(r.lines || []).length} รายการ · ประมาณ ${money(r.total)}`;
+          const del = () => {
+            if (confirm(`ลบ${kind === "count" ? "การนับ" : "ใบสั่งของ"} ${thDate(r.date)}\n(${(r.lines || []).length} รายการ)\n\nลบถาวร ยืนยัน?`))
+              delRecord(kind, mk, r.id);
+          };
           return (
-            <div key={r.id} className="card" style={{ overflow:"hidden" }}>
+            <SwipeRow key={r.id} onEdit={() => openEdit(kind, r)} onDelete={isOwner ? del : null}>
+            <div className="card" style={{ overflow:"hidden" }}>
               <button className="press" onClick={() => setOpenId(open ? "" : r.id)}
                 style={{ width:"100%", textAlign:"left", padding:"12px 14px", display:"flex", gap:10, alignItems:"center" }}>
                 <div className="thumb" style={{ width:40, height:40, fontSize:17, background:"var(--soft)" }}>
@@ -1811,15 +1941,13 @@ function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, 
                       `${kind}-${r.date}.png`, say)}>
                       🖼 ส่งเป็นรูปภาพ
                     </button>
-                    {isOwner ? (
-                      <button className="btn danger press" onClick={() => {
-                        if (confirm("ลบรายการนี้ถาวร?")) delRecord(kind, mk, r.id);
-                      }}>🗑 ลบรายการนี้</button>
-                    ) : null}
+                    <button className="btn ghost press" onClick={() => openEdit(kind, r)}>✏️ แก้ไขรายการนี้</button>
+                    {isOwner ? <button className="btn danger press" onClick={del}>🗑 ลบรายการนี้</button> : null}
                   </div>
                 </div>
               ) : null}
             </div>
+            </SwipeRow>
           );
         })}
       </div>
