@@ -1044,10 +1044,10 @@ function App() {
         </div>
       ) : (
         <>
-          {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, onDeleteItem, say }} />}
+          {tab === "stock" && <TabStock {...{ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, onDeleteItem, askOwner, say }} />}
           {tab === "count" && <TabCount {...{ items, cats, photos, latest, shop, shopLogo:logoOf(logos, shopId), saveCount, say, setTab, editRec, setEditRec }} />}
           {tab === "order" && <TabOrder {...{ items, latest, lowItems, orderDraft, setOrderDraft, orderVendor, setOrderVendor, vendors:vendorList, shop, shopLogo:logoOf(logos, shopId), saveOrder, say, editRec, setEditRec }} />}
-          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, openEdit, isOwner, say }} />}
+          {tab === "hist"  && <TabHist  {...{ counts, orders, items, shop, shopLogo:logoOf(logos, shopId), loadMonth, delRecord, openEdit, isOwner, askOwner, say }} />}
           {tab === "setup" && <TabSetup {...{ shops, shop, saveShops, setShopId, cats, units, vendors:vendorList, saveVendors, items, photos, logos, online, lastSync, dbError, savePhoto, saveMeta, isOwner, cfg, setCfg, setSheet, say, loadSeed, cleanupSeed, wipeShop, resetAll, exportJson, importJson }} />}
         </>
       )}
@@ -1187,7 +1187,7 @@ function Header({ shop, shops, logos, setShopId, isOwner, onRole, onHelp, onUndo
 }
 
 /* ---------- TAB 1: รายการของ ---------- */
-function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, onDeleteItem, say }) {
+function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner, setSheet, onDeleteItem, askOwner, say }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("*");
   const [onlyLow, setOnlyLow] = useState(false);
@@ -1229,7 +1229,7 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
       <div style={{ padding:"0 16px 10px" }}>
         <button className="btn press" style={{ width:"100%" }} onClick={() => setSheet({ type:"item", data:null })}>➕ เพิ่มรายการใหม่</button>
         <div style={{ fontSize:11.5, color:"var(--muted)", textAlign:"center", marginTop:8 }}>
-          👉 ปัดขวาเพื่อแก้ไข{isOwner ? " · 👈 ปัดซ้ายเพื่อลบ" : ""}
+          👉 ปัดขวาเพื่อแก้ไข · 👈 ปัดซ้ายเพื่อลบ{isOwner ? "" : " (ต้องใส่ PIN)"}
         </div>
       </div>
 
@@ -1247,7 +1247,7 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
           const trend = priceTrend(it);
           return (
             <SwipeRow key={it.id} onEdit={() => setSheet({ type:"item", data:it })}
-              onDelete={isOwner ? () => onDeleteItem(it) : null}>
+              onDelete={isOwner ? () => onDeleteItem(it) : askOwner}>
             <div className="card press" onClick={() => setSheet({ type:"view", data:it })}
               style={{ padding:11, display:"flex", gap:11, alignItems:"center", borderColor: low ? "#EFC3C9" : "var(--line)" }}>
               {photos[it.id] ? <img className="thumb" src={photos[it.id]} alt="" /> : <div className="thumb">📦</div>}
@@ -1864,7 +1864,7 @@ function TabOrder({ items, latest, lowItems, orderDraft, setOrderDraft, orderVen
 }
 
 /* ---------- TAB 4: ประวัติ ---------- */
-function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, openEdit, isOwner, say }) {
+function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, openEdit, isOwner, askOwner, say }) {
   const [kind, setKind] = useState("count");
   const [mk, setMk] = useState(monthOf(today()));
   const [openId, setOpenId] = useState("");
@@ -1942,7 +1942,10 @@ function TabHist({ counts, orders, items, shop, shopLogo, loadMonth, delRecord, 
                       🖼 ส่งเป็นรูปภาพ
                     </button>
                     <button className="btn ghost press" onClick={() => openEdit(kind, r)}>✏️ แก้ไขรายการนี้</button>
-                    {isOwner ? <button className="btn danger press" onClick={del}>🗑 ลบรายการนี้</button> : null}
+                    {isOwner
+                      ? <button className="btn danger press" onClick={del}>🗑 ลบรายการนี้</button>
+                      : <button className="btn ghost press" onClick={askOwner}
+                          style={{ color:"var(--red)" }}>🔒 ลบรายการนี้ — ใส่ PIN เจ้าของ</button>}
                   </div>
                 </div>
               ) : null}
