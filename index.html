@@ -107,6 +107,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 .kv:last-child{border-bottom:none}
 .empty{text-align:center;color:var(--muted);padding:36px 20px;font-size:14px}
 .emptypic{width:140px;height:140px;object-fit:contain;opacity:.92;margin:0 auto 6px;display:block;border-radius:20px}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px;
+  border:1px solid var(--line);background:#fff}
+.tbl{border-collapse:collapse;width:100%;min-width:560px;font-size:12.5px}
+.tbl th{background:var(--head);color:#fff;font-weight:500;padding:9px 8px;text-align:center;
+  white-space:nowrap;position:sticky;top:0;z-index:1}
+.tbl td{padding:8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+.tbl td.nm{text-align:left;white-space:normal;min-width:170px;line-height:1.35}
+.tbl tr.grp td{background:linear-gradient(90deg,var(--gold),rgba(198,139,74,.72));color:#fff;
+  font-weight:600;text-align:left;padding:8px 11px;font-size:13px;position:sticky;left:0}
+.tbl tr.alt td{background:#FBFAF6}
+.tbl tr.low td{background:#FDF1F2}
+.tbl .num{font-weight:600;font-variant-numeric:tabular-nums}
 .swipe{position:relative;overflow:hidden;border-radius:18px}
 .swipe-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;
   padding:0 20px;font-size:13.5;font-weight:500;color:#fff;border-radius:18px}
@@ -1191,6 +1203,8 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("*");
   const [onlyLow, setOnlyLow] = useState(false);
+  const [view, setView] = useState(LS.get("ps_view") || "card");
+  const setV = v => { setView(v); LS.set("ps_view", v); };
 
   const list = useMemo(() => {
     let r = items.slice();
@@ -1207,6 +1221,12 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
     <div>
       <div style={{ padding:"14px 16px 6px" }}>
         <input placeholder="🔍 ค้นหา ชื่อ / ยี่ห้อ / ร้านที่ซื้อ" value={q} onChange={e => setQ(e.target.value)} />
+        <div style={{ display:"flex", gap:8, marginTop:10 }}>
+          <button className={"chip press " + (view === "card" ? "on" : "")} style={{ flex:1, padding:"8px 0", textAlign:"center" }}
+            onClick={() => setV("card")}>🃏 การ์ด</button>
+          <button className={"chip press " + (view === "table" ? "on" : "")} style={{ flex:1, padding:"8px 0", textAlign:"center" }}
+            onClick={() => setV("table")}>📊 ตาราง</button>
+        </div>
       </div>
       <div className="scroll-x">
         <button className={"chip press " + (cat === "*" && !onlyLow ? "on" : "")}
@@ -1240,6 +1260,9 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
         </div>
       ) : null}
 
+      {view === "table" ? <StockTable {...{ list, latest, lowItems, setSheet }} /> : null}
+
+      {view === "card" ? (
       <div style={{ padding:"0 16px", display:"grid", gap:8 }}>
         {list.map(it => {
           const l = latest.map[it.id];
@@ -1275,6 +1298,75 @@ function TabStock({ items, cats, photos, latest, lowItems, neverCounted, isOwner
             </SwipeRow>
           );
         })}
+      </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------- มุมมองตาราง แยกตามร้านที่ซื้อ ---------- */
+function StockTable({ list, latest, lowItems, setSheet }) {
+  const groups = useMemo(() => {
+    const by = {};
+    list.forEach(i => { (by[i.vendor || "ไม่ระบุร้าน"] = by[i.vendor || "ไม่ระบุร้าน"] || []).push(i); });
+    return Object.entries(by).sort((a, b) => a[0].localeCompare(b[0], "th"));
+  }, [list]);
+
+  if (!list.length) return null;
+  let n = 0;
+
+  return (
+    <div style={{ padding:"0 16px 4px" }}>
+      <div className="tblwrap">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{ textAlign:"left" }}>รายการ</th>
+              <th>ควรมี</th>
+              <th>เหลือ</th>
+              <th>ต้องสั่ง</th>
+              <th>ปริมาณ/หน่วย</th>
+              <th>ราคา</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map(([vendor, arr]) => (
+              <React.Fragment key={vendor}>
+                <tr className="grp"><td colSpan="6">🏬 {vendor} · {arr.length} รายการ</td></tr>
+                {arr.map(i => {
+                  const l = latest.map[i.id];
+                  const low = lowItems.some(x => x.id === i.id);
+                  const need = low ? suggestQty(i, latest) : 0;
+                  const p = packOf(i);
+                  n++;
+                  return (
+                    <tr key={i.id} className={low ? "low" : (n % 2 ? "alt" : "")}
+                      onClick={() => setSheet({ type:"view", data:i })}>
+                      <td className="nm">
+                        <b>{i.name}</b>
+                        {i.brand ? <span style={{ color:"var(--muted)" }}> · {i.brand}</span> : null}
+                      </td>
+                      <td className="num" style={{ color:"var(--muted)" }}>{Number(i.min) > 0 ? nf(i.min) : "–"}</td>
+                      <td className="num" style={{ color: low ? "var(--red)" : "var(--green)" }}>
+                        {l ? nf(l.qty) : "–"}
+                      </td>
+                      <td className="num" style={{ color: need ? "var(--gold)" : "var(--muted)", fontSize:13.5 }}>
+                        {need ? `${nf(need)} ${orderUnit(i)}` : "–"}
+                      </td>
+                      <td style={{ color:"var(--muted)" }}>
+                        {p ? `${nf(p.size)} ${i.unit}/${p.unit}` : i.unit}
+                      </td>
+                      <td className="num">{Number(i.price) ? money(i.price) : "–"}</td>
+                    </tr>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontSize:11.5, color:"var(--muted)", textAlign:"center", marginTop:8, lineHeight:1.6 }}>
+        แถวสีชมพู = ต่ำกว่าขั้นต่ำ · เลื่อนตารางซ้ายขวาได้ · แตะแถวเพื่อดูรายละเอียด
       </div>
     </div>
   );
