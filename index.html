@@ -118,6 +118,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
   font-weight:600;text-align:left;padding:8px 11px;font-size:13px;position:sticky;left:0}
 .tbl tr.alt td{background:#FBFAF6}
 .tbl tr.low td{background:#FDF1F2}
+.tbl tr.band td{color:#1F2A37;font-weight:600;text-align:left;padding:7px 10px;font-size:12.5px}
+.tbl input.cnt{width:72px;padding:6px 4px;text-align:center;font-weight:600;font-size:15px;
+  border-radius:9px;border:1.5px solid var(--gold);background:#fff}
+.tbl td.doing{background:#EAF5EE}
 .tbl .num{font-weight:600;font-variant-numeric:tabular-nums}
 .swipe{position:relative;overflow:hidden;border-radius:18px}
 .swipe-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;
@@ -393,6 +397,134 @@ const SEED = {
     return { cats:DEFAULT_CATS, units:DEFAULT_UNITS, items:mkItems(rows) };
   }
 };
+
+/* ---------- พิมพ์แบบฟอร์มเช็คสต๊อก (A4) ---------- */
+const BAND = ["#DCE6F1","#E8EEDC","#F5E1E1","#E6E0EF","#FBE8D5","#DFF0EF","#F2E8D8"];
+
+function groupByVendor(items) {
+  const by = {};
+  items.forEach(i => { (by[i.vendor || "ไม่ระบุร้าน"] = by[i.vendor || "ไม่ระบุร้าน"] || []).push(i); });
+  return Object.entries(by).sort((a, b) => a[0].localeCompare(b[0], "th"));
+}
+const unitCell = i => {
+  const p = packOf(i);
+  return p ? `${i.unit}(1${p.unit}มี${nf(p.size)}${i.unit})` : (i.unit || "");
+};
+const esc = t => String(t == null ? "" : t)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function renderFormImage({ shop, items, latest, vals, withValues }) {
+  const groups = groupByVendor(items);
+  const COLS = [
+    { k:"vendor", t:"สถานที่",  w:118, a:"left"  },
+    { k:"min",    t:"ควรมี",    w:70 },
+    { k:"unit",   t:"หน่วย",     w:150 },
+    { k:"have",   t:"เหลือ",     w:82 },
+    { k:"order",  t:"สั่ง",      w:70 },
+    { k:"name",   t:"รายการ",   w:282, a:"left"  },
+    { k:"qty",    t:"ปริมาณ",   w:98 },
+    { k:"price",  t:"ราคา",     w:82 },
+  ];
+  const PAD = 24, RH = 36, HH = 42;
+  const W = PAD * 2 + COLS.reduce((s2, c) => s2 + c.w, 0);
+  const TOP = 118;
+  const rows = items.length + groups.length;      // แถวของ + แถวคั่นกลุ่ม
+  const H = TOP + HH + rows * RH + 86;
+
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  const head = colorOf(shop && shop.color).head;
+
+  x.fillStyle = "#FFFFFF"; x.fillRect(0, 0, W, H);
+
+  /* หัวกระดาษ */
+  x.fillStyle = head; x.fillRect(0, 0, W, 96);
+  x.fillStyle = "#fff"; x.textAlign = "center";
+  x.font = "600 30px Kanit, sans-serif";
+  x.fillText(`แบบฟอร์มเช็คสต๊อก — ${shop ? shop.name : ""}`, W / 2, 44);
+  x.font = "400 18px Kanit, sans-serif"; x.globalAlpha = .9;
+  x.fillText(withValues
+    ? `บันทึกยอดแล้ว · ${thDate(today())} · รวม ${items.length} รายการ`
+    : `วันที่ ................  ผู้นับ ................  ผู้ตรวจ ................`, W / 2, 76);
+  x.globalAlpha = 1; x.textAlign = "left";
+
+  /* หัวตาราง */
+  let cx = PAD, y = TOP;
+  x.fillStyle = "#3A4452"; x.fillRect(PAD, y, W - PAD * 2, HH);
+  x.fillStyle = "#fff"; x.font = "500 17px Kanit, sans-serif";
+  COLS.forEach(col => {
+    x.textAlign = "center";
+    x.fillText(col.t, cx + col.w / 2, y + 27);
+    cx += col.w;
+  });
+  y += HH;
+
+  const line = (x1, y1, x2, y2) => { x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2); x.stroke(); };
+  const fit = (t, w) => {
+    let s2 = String(t == null ? "" : t);
+    if (x.measureText(s2).width <= w) return s2;
+    while (s2.length && x.measureText(s2 + "…").width > w) s2 = s2.slice(0, -1);
+    return s2 + "…";
+  };
+
+  groups.forEach(([vendor, arr], gi) => {
+    const band = BAND[gi % BAND.length];
+    arr.forEach((i, k) => {
+      const v = vals && vals[i.id] !== undefined && vals[i.id] !== "" ? vals[i.id] : "";
+      const low = withValues && v !== "" && Number(i.min) > 0 && Number(v) <= Number(i.min);
+      const need = low ? suggestQty(i, { map:{ [i.id]:{ qty:Number(v) } } }) : "";
+      const p = packOf(i);
+      const cells = {
+        vendor: k === 0 ? vendor : "",
+        min: Number(i.min) > 0 ? nf(i.min) : "",
+        unit: p ? `${i.unit} (1${p.unit}มี${nf(p.size)}${i.unit})` : i.unit,
+        have: withValues && v !== "" ? nf(v) : "",
+        order: need ? nf(need) : "",
+        name: i.name + (i.brand ? ` (${i.brand})` : ""),
+        qty: i.detail || "",
+        price: Number(i.price) ? nf(i.price) : "",
+      };
+
+      x.fillStyle = low ? "#FBE4E6" : band;
+      x.fillRect(PAD, y, W - PAD * 2, RH);
+
+      cx = PAD;
+      COLS.forEach(col => {
+        if (col.k === "have" || col.k === "order") { x.fillStyle = "#fff"; x.fillRect(cx, y, col.w, RH); }
+        const val = cells[col.k];
+        if (val !== "") {
+          x.fillStyle = col.k === "order" ? "#9A5B1B" : col.k === "have" ? "#1F2A37" : "#1F2A37";
+          const bold = ["name", "have", "order"].includes(col.k) || col.k === "vendor";
+          x.font = `${bold ? 600 : 400} ${col.k === "unit" || col.k === "qty" ? 14 : col.k === "vendor" ? 14 : 16}px Kanit, sans-serif`;
+          if (col.a === "left") { x.textAlign = "left"; x.fillText(fit(val, col.w - 16), cx + 8, y + 24); }
+          else { x.textAlign = "center"; x.fillText(fit(val, col.w - 10), cx + col.w / 2, y + 24); }
+        }
+        cx += col.w;
+      });
+
+      x.strokeStyle = "#B9BFC7"; x.lineWidth = 1;
+      cx = PAD;
+      COLS.forEach(col => { line(cx + .5, y, cx + .5, y + RH); cx += col.w; });
+      line(cx - .5, y, cx - .5, y + RH);
+      line(PAD, y + RH - .5, W - PAD, y + RH - .5);
+      y += RH;
+    });
+    x.fillStyle = "#FFFFFF"; x.fillRect(PAD, y, W - PAD * 2, RH);
+    y += RH;
+  });
+
+  x.strokeStyle = "#6B7480"; x.lineWidth = 2;
+  x.strokeRect(PAD, TOP, W - PAD * 2, y - TOP);
+
+  x.fillStyle = "#5A6472"; x.font = "400 16px Kanit, sans-serif"; x.textAlign = "left";
+  x.fillText(withValues
+    ? `รวม ${items.length} รายการ · ${thDate(today())}`
+    : "นับของจริงแล้วเขียนในช่อง เหลือ · ช่อง สั่ง ให้หัวหน้ากรอก", PAD, y + 34);
+  x.textAlign = "right";
+  x.fillText("Stock PLP", W - PAD, y + 34);
+  return c;
+}
 
 /* ---------- สร้างข้อความ / รูป สำหรับส่งต่อ ---------- */
 function buildText(kind, shopName, head, groups, footer) {
@@ -1575,6 +1707,8 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
   const [cat, setCat] = useState("*");
   const [done, setDone] = useState(null);
   const [editId, setEditId] = useState("");
+  const [view, setView] = useState(LS.get("ps_cview") || "card");
+  const setV = v => { setView(v); LS.set("ps_cview", v); };
 
   useEffect(() => {
     if (!editRec || editRec.kind !== "count") return;
@@ -1629,11 +1763,24 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
         </div>
       </div>
 
+      <div style={{ padding:"0 16px 10px", display:"flex", gap:8 }}>
+        <button className={"chip press " + (view === "card" ? "on" : "")} style={{ flex:1, padding:"8px 0", textAlign:"center" }}
+          onClick={() => setV("card")}>🃏 การ์ด</button>
+        <button className={"chip press " + (view === "table" ? "on" : "")} style={{ flex:1, padding:"8px 0", textAlign:"center" }}
+          onClick={() => setV("table")}>📊 ตาราง</button>
+        <button className="chip press" style={{ padding:"8px 14px" }}
+          onClick={() => shareCanvas(renderFormImage({ shop, items, latest, vals:{}, withValues:false }),
+            `form-blank-${today()}.png`, say)}>🖼 ฟอร์มเปล่า</button>
+      </div>
+
       <div className="scroll-x">
         <button className={"chip press " + (cat === "*" ? "on" : "")} onClick={() => setCat("*")}>ทั้งหมด</button>
         {cats.map(c => <button key={c} className={"chip press " + (cat === c ? "on" : "")} onClick={() => setCat(c)}>{c}</button>)}
       </div>
 
+      {view === "table" ? <CountTable {...{ list, vals, setVals, latest }} /> : null}
+
+      {view === "card" ? (
       <div style={{ padding:"0 16px", display:"grid", gap:7 }}>
         {list.map(i => {
           const v = vals[i.id];
@@ -1659,11 +1806,84 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
           );
         })}
       </div>
+      ) : null}
 
       <div style={{ padding:"14px 16px 0" }}>
         <button className="btn gold press" style={{ width:"100%" }} onClick={submit}>
           {editId ? "💾 บันทึกทับของเดิม" : "✅ บันทึกผลนับ"} {filled ? `(${filled} รายการ)` : ""}
         </button>
+        <button className="btn ghost press" style={{ width:"100%", marginTop:8 }}
+          onClick={() => shareCanvas(renderFormImage({ shop, items, latest, vals, withValues:true }),
+            `form-${today()}.png`, say)}>
+          🖼 ส่งตารางพร้อมยอดเป็นรูป
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- ตารางนับสต๊อก แบบชีต Excel ---------- */
+function CountTable({ list, vals, setVals, latest }) {
+  const groups = useMemo(() => groupByVendor(list), [list]);
+  if (!list.length) return null;
+
+  return (
+    <div style={{ padding:"0 16px 4px" }}>
+      <div className="tblwrap">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{ minWidth:58 }}>ควรมี</th>
+              <th style={{ minWidth:96 }}>หน่วย</th>
+              <th style={{ minWidth:84 }}>เหลือ</th>
+              <th style={{ minWidth:58 }}>สั่ง</th>
+              <th style={{ textAlign:"left", minWidth:160 }}>รายการ</th>
+              <th style={{ minWidth:74 }}>ปริมาณ</th>
+              <th style={{ minWidth:58 }}>ราคา</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map(([vendor, arr], gi) => (
+              <React.Fragment key={vendor}>
+                <tr className="band"><td colSpan="7" style={{ background:BAND[gi % BAND.length] }}>
+                  🏬 {vendor} · {arr.length} รายการ
+                </td></tr>
+                {arr.map(i => {
+                  const v = vals[i.id];
+                  const has = v !== undefined && v !== "";
+                  const low = has && Number(i.min) > 0 && Number(v) <= Number(i.min);
+                  const need = low ? suggestQty(i, { map:{ [i.id]:{ qty:Number(v) } } }) : 0;
+                  const p = packOf(i);
+                  return (
+                    <tr key={i.id} className={low ? "low" : ""}>
+                      <td className="num" style={{ color:"var(--muted)" }}>{Number(i.min) > 0 ? nf(i.min) : "–"}</td>
+                      <td style={{ fontSize:11, color:"var(--muted)" }}>
+                        {i.unit}{p ? <span><br/>(1{p.unit}มี{nf(p.size)}{i.unit})</span> : null}
+                      </td>
+                      <td className={has ? "doing" : ""}>
+                        <input className="cnt" type="number" inputMode="decimal" placeholder="–"
+                          value={v === undefined ? "" : v}
+                          onChange={e => setVals(pv => ({ ...pv, [i.id]: e.target.value }))} />
+                      </td>
+                      <td className="num" style={{ color: need ? "var(--gold)" : "var(--muted)" }}>
+                        {need ? nf(need) : "–"}
+                      </td>
+                      <td className="nm">
+                        <b>{i.name}</b>
+                        {i.brand ? <span style={{ color:"var(--muted)" }}> ({i.brand})</span> : null}
+                      </td>
+                      <td style={{ fontSize:11, color:"var(--muted)" }}>{i.detail || "–"}</td>
+                      <td className="num">{Number(i.price) ? nf(i.price) : "–"}</td>
+                    </tr>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontSize:11.5, color:"var(--muted)", textAlign:"center", marginTop:8 }}>
+        กรอกเฉพาะช่อง <b>เหลือ</b> · ช่อง <b>สั่ง</b> คำนวณให้เอง · เลื่อนตารางซ้ายขวาได้
       </div>
     </div>
   );
