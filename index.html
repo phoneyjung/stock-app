@@ -109,17 +109,23 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 .emptypic{width:140px;height:140px;object-fit:contain;opacity:.92;margin:0 auto 6px;display:block;border-radius:20px}
 .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px;
   border:1px solid var(--line);background:#fff}
-.tbl{border-collapse:collapse;width:100%;min-width:560px;font-size:12.5px}
-.tbl th{background:var(--head);color:#fff;font-weight:500;padding:9px 8px;text-align:center;
+.tbl{border-collapse:collapse;width:100%;min-width:calc(560px * var(--z,1));
+  font-size:calc(12.5px * var(--z,1))}
+.tbl th{background:var(--head);color:#fff;font-weight:500;text-align:center;
+  padding:calc(9px * var(--z,1)) calc(8px * var(--z,1));
   white-space:nowrap;position:sticky;top:0;z-index:1}
-.tbl td{padding:8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
-.tbl td.nm{text-align:left;white-space:normal;min-width:170px;line-height:1.35}
+.tbl td{padding:calc(8px * var(--z,1));border-bottom:1px solid var(--line);
+  text-align:center;white-space:nowrap}
+.tbl td.nm{text-align:left;white-space:normal;min-width:calc(170px * var(--z,1));line-height:1.35}
 .tbl tr.grp td{background:linear-gradient(90deg,var(--gold),rgba(198,139,74,.72));color:#fff;
-  font-weight:600;text-align:left;padding:8px 11px;font-size:13px;position:sticky;left:0}
+  font-weight:600;text-align:left;padding:calc(8px * var(--z,1)) calc(11px * var(--z,1));
+  font-size:calc(13px * var(--z,1));position:sticky;left:0}
 .tbl tr.alt td{background:#FBFAF6}
 .tbl tr.low td{background:#FDF1F2}
-.tbl tr.band td{color:#1F2A37;font-weight:600;text-align:left;padding:7px 10px;font-size:12.5px}
-.tbl input.cnt{width:72px;padding:6px 4px;text-align:center;font-weight:600;font-size:15px;
+.tbl tr.band td{color:#1F2A37;font-weight:600;text-align:left;
+  padding:calc(7px * var(--z,1)) calc(10px * var(--z,1));font-size:calc(12.5px * var(--z,1))}
+.tbl input.cnt{width:calc(72px * var(--z,1));padding:calc(6px * var(--z,1)) 4px;
+  text-align:center;font-weight:600;font-size:calc(15px * var(--z,1));
   border-radius:9px;border:1.5px solid var(--gold);background:#fff}
 .tbl td.doing{background:#EAF5EE}
 .tbl .num{font-weight:600;font-variant-numeric:tabular-nums}
@@ -134,7 +140,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
   #root{max-width:1024px}
   .sheet-in{max-width:720px}
   .tbl{min-width:0}
-  .tbl th,.tbl td{padding:9px 10px;font-size:13.5px}
+  .tbl th,.tbl td{padding:calc(9px * var(--z,1)) calc(10px * var(--z,1));font-size:calc(13.5px * var(--z,1))}
   .tbl td.nm{min-width:0}
   .nav{max-width:1024px;left:50%;transform:translateX(-50%);border-radius:18px 18px 0 0;
     border-left:1px solid var(--line);border-right:1px solid var(--line)}
@@ -718,6 +724,35 @@ function SwipeRow({ onEdit, onDelete, children }) {
         onTouchStart={down} onTouchMove={move} onTouchEnd={up} onTouchCancel={up}>
         {children}
       </div>
+    </div>
+  );
+}
+
+const ZOOMS = [0.62, 0.78, 1, 1.18];
+const ZNAME = ["เล็กสุด", "เล็ก", "ปกติ", "ใหญ่"];
+
+function useZoom(key) {
+  const [z, setZ] = useState(() => {
+    const v = Number(LS.get(key)); return ZOOMS.includes(v) ? v : 1;
+  });
+  const set = v => { setZ(v); LS.set(key, String(v)); };
+  return [z, set];
+}
+
+function ZoomBar({ z, setZ }) {
+  const i = ZOOMS.indexOf(z);
+  return (
+    <div className="row" style={{ gap:8, justifyContent:"flex-end", marginBottom:8 }}>
+      <span style={{ fontSize:11.5, color:"var(--muted)" }}>ขนาดตาราง</span>
+      <button className="press" disabled={i <= 0} onClick={() => setZ(ZOOMS[i - 1])}
+        style={{ width:36, height:32, borderRadius:10, background:"var(--soft)", fontSize:17,
+          opacity: i <= 0 ? .35 : 1 }}>−</button>
+      <span style={{ fontSize:12, fontWeight:500, minWidth:52, textAlign:"center", color:"var(--head)" }}>
+        {ZNAME[i]}
+      </span>
+      <button className="press" disabled={i >= ZOOMS.length - 1} onClick={() => setZ(ZOOMS[i + 1])}
+        style={{ width:36, height:32, borderRadius:10, background:"var(--soft)", fontSize:17,
+          opacity: i >= ZOOMS.length - 1 ? .35 : 1 }}>＋</button>
     </div>
   );
 }
@@ -1459,12 +1494,14 @@ function StockTable({ list, latest, lowItems, setSheet }) {
     return Object.entries(by).sort((a, b) => a[0].localeCompare(b[0], "th"));
   }, [list]);
 
+  const [z, setZ] = useZoom("ps_zoom_stock");
   if (!list.length) return null;
   let n = 0;
 
   return (
     <div style={{ padding:"0 16px 4px" }}>
-      <div className="tblwrap">
+      <ZoomBar z={z} setZ={setZ} />
+      <div className="tblwrap" style={{ "--z": z }}>
         <table className="tbl">
           <thead>
             <tr>
@@ -1840,11 +1877,13 @@ function TabCount({ items, cats, photos, latest, shop, shopLogo, saveCount, say,
 /* ---------- ตารางนับสต๊อก แบบชีต Excel ---------- */
 function CountTable({ list, vals, setVals, latest }) {
   const groups = useMemo(() => groupByVendor(list), [list]);
+  const [z, setZ] = useZoom("ps_zoom_count");
   if (!list.length) return null;
 
   return (
     <div style={{ padding:"0 16px 4px" }}>
-      <div className="tblwrap">
+      <ZoomBar z={z} setZ={setZ} />
+      <div className="tblwrap" style={{ "--z": z }}>
         <table className="tbl">
           <thead>
             <tr>

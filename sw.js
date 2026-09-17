@@ -1,4 +1,4 @@
-const CACHE = 'plp-stock-v27';
+const CACHE = 'plp-stock-v28';
 const CORE = ['./', './index.html', './manifest.json', './firebase-config.js', './icon-192.png'];
 
 self.addEventListener('install', e => {
